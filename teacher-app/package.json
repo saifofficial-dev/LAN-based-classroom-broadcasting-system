@@ -1,0 +1,38 @@
+{
+  "name": "classroom-broadcast-teacher",
+  "version": "1.0.0",
+  "description": "Teacher Frontend (Electron + Web) for Classroom Broadcast System",
+  "main": "src/main/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "build": "electron-builder"
+  },
+  "dependencies": {
+    "electron": "^27.0.0",
+    "socket.io-client": "^4.7.2",
+    "simple-peer": "^9.11.1"
+  },
+  "devDependencies": {
+    "electron-builder": "^24.6.4"
+  },
+  "build": {
+    "appId": "com.classroom.broadcast.teacher",
+    "productName": "Classroom Broadcast Teacher",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "public/**/*"
+    ]
+  },
+  "keywords": [
+    "classroom",
+    "broadcast",
+    "electron",
+    "teacher"
+  ],
+  "author": "",
+  "license": "MIT"
+}

@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Classroom Broadcast - Teacher</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #0f172a; color: #fff; font-family: 'Segoe UI', sans-serif; height: 100vh; display: flex; flex-direction: column; }
+
+    #dashboard { display: flex; flex: 1; flex-direction: column; }
+    
+    #top-bar {
+      height: 50px; background: #1e293b; display: flex; align-items: center;
+      padding: 0 1rem; gap: 1rem; border-bottom: 1px solid #334155;
+    }
+    #top-bar h2 { font-size: 1.1rem; }
+    
+    #main-content { flex: 1; display: flex; overflow: hidden; }
+    
+    #sidebar {
+      width: 250px; background: #1e293b; border-right: 1px solid #334155;
+      padding: 1rem; display: flex; flex-direction: column; gap: 0.5rem;
+    }
+    .sidebar-btn {
+      padding: 0.75rem; background: #334155; border: none; border-radius: 6px;
+      color: #fff; cursor: pointer; text-align: left; font-size: 0.9rem;
+    }
+    .sidebar-btn:hover { background: #475569; }
+    .sidebar-btn.active { background: #3b82f6; }
+    
+    #workspace { flex: 1; display: flex; flex-direction: column; padding: 1rem; }
+    
+    #broadcast-area {
+      flex: 1; background: #0f172a; border-radius: 8px; display: flex;
+      align-items: center; justify-content: center; border: 2px dashed #334155;
+      position: relative; overflow: hidden;
+    }
+    
+    #controls {
+      height: 70px; background: #1e293b; border-top: 1px solid #334155;
+      display: flex; align-items: center; justify-content: center; gap: 1rem; padding: 0 1rem;
+      flex-wrap: wrap; z-index: 5; position: relative;
+    }
+    .control-btn {
+      padding: 0.6rem 1.5rem; border-radius: 6px; border: none; cursor: pointer;
+      font-size: 0.95rem; font-weight: bold; display: inline-block; min-width: 120px;
+    }
+    #create-room-btn { background: #3b82f6; color: #fff; }
+    #start-btn { background: #22c55e; color: #000; }
+    #stop-btn { background: #ef4444; color: #fff; display: none; }
+    #whiteboard-btn { background: #f59e0b; color: #000; }
+    #pointer-btn { background: #8b5cf6; color: #fff; }
+    
+    #student-panel {
+      width: 200px; background: #1e293b; border-left: 1px solid #334155;
+      padding: 1rem; display: flex; flex-direction: column;
+    }
+    #student-panel h3 { font-size: 0.9rem; margin-bottom: 0.5rem; color: #94a3b8; }
+    
+    #classroom-modal {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 1000;
+    }
+    #classroom-modal-content {
+      background: #1e293b; padding: 2rem; border-radius: 12px; width: 400px;
+      display: flex; flex-direction: column; gap: 1rem;
+    }
+    #classroom-modal-content h3 { color: #3b82f6; margin-bottom: 0.5rem; }
+    #classroom-modal-content input {
+      padding: 0.75rem; border-radius: 6px; border: 1px solid #334155;
+      background: #0f172a; color: #fff; font-size: 0.9rem;
+    }
+    #classroom-modal-content button {
+      padding: 0.75rem; background: #3b82f6; color: #fff; border: none;
+      border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: bold;
+    }
+    #classroom-modal-content button:hover { background: #2563eb; }
+    #student-list { flex: 1; overflow-y: auto; }
+    .student-item {
+      padding: 0.5rem; background: #334155; border-radius: 4px; margin-bottom: 0.25rem;
+      font-size: 0.85rem; display: flex; justify-content: space-between; align-items: center;
+    }
+    .hand-raised { background: #f59e0b; color: #000; }
+  </style>
+</head>
+<body>
+
+<!-- Dashboard -->
+<div id="dashboard">
+  <div id="top-bar">
+    <h2>📚 Classroom Broadcast</h2>
+    <span style="color:#94a3b8;font-size:0.85rem;margin-left:1rem">👨‍🏫 Teacher:</span>
+    <input id="teacher-name-input" placeholder="Enter your name" style="padding:0.3rem 0.6rem;background:#0f172a;border:1px solid #334155;border-radius:6px;color:#fff;font-size:0.9rem;width:160px" />
+    <span style="margin-left:auto;color:#64748b;font-size:0.8rem">🔒 LAN Only</span>
+  </div>
+  
+  <div id="main-content">
+    <div id="sidebar">
+      <button class="sidebar-btn active" onclick="showSection('broadcast')">🎥 Broadcast</button>
+      <button class="sidebar-btn" onclick="showSection('whiteboard')">🎨 Whiteboard</button>
+      <button class="sidebar-btn" onclick="showSection('files')">📁 Files</button>
+      <button class="sidebar-btn" onclick="showSection('settings')">⚙️ Settings</button>
+    </div>
+    
+    <div id="workspace">
+      <div id="broadcast-area">
+        <div style="text-align:center;color:#94a3b8">
+          <div style="font-size:3rem;margin-bottom:1rem">🖥️</div>
+          <div>Click "Start Broadcast" to begin sharing</div>
+        </div>
+      </div>
+      
+      <div id="whiteboard-area" style="display:none;flex:1;background:#fff;border-radius:8px;">
+        <canvas id="whiteboard" style="width:100%;height:100%;"></canvas>
+      </div>
+      <!-- Teacher-side pointer overlay -->
+      <div id="teacher-pointer" style="position:absolute;display:none;width:18px;height:18px;border-radius:50%;background:rgba(255,0,0,0.9);box-shadow:0 0 14px 7px rgba(255,0,0,0.5);pointer-events:none;z-index:999;transform:translate(-50%,-50%);"></div>
+    </div>
+    
+    <div id="student-panel">
+      <h3>Students (<span id="student-count">0</span>)</h3>
+      <div id="student-list"></div>
+    </div>
+  </div>
+  
+  <div id="controls">
+    <button id="create-room-btn" onclick="showClassroomModal()" style="background:#3b82f6;color:#fff;padding:0.6rem 1.5rem;border-radius:6px;border:none;cursor:pointer;font-size:0.95rem;font-weight:bold;min-width:150px">🏠 Create Classroom</button>
+    <button id="start-btn" onclick="startBroadcast()" disabled style="background:#22c55e;color:#000;padding:0.6rem 1.5rem;border-radius:6px;border:none;cursor:pointer;font-size:0.95rem;font-weight:bold;min-width:140px;opacity:0.5;cursor:not-allowed">▶ Start Broadcast</button>
+    <button id="stop-btn" onclick="stopBroadcast()" style="background:#ef4444;color:#fff;padding:0.6rem 1.5rem;border-radius:6px;border:none;cursor:pointer;font-size:0.95rem;font-weight:bold;display:none">⏹ Stop Broadcast</button>
+    <button id="whiteboard-btn" onclick="toggleWhiteboard()" style="background:#f59e0b;color:#000;padding:0.6rem 1.5rem;border-radius:6px;border:none;cursor:pointer;font-size:0.95rem;font-weight:bold">🎨 Whiteboard</button>
+    <button id="pointer-btn" onclick="togglePointer()" style="background:#8b5cf6;color:#fff;padding:0.6rem 1.5rem;border-radius:6px;border:none;cursor:pointer;font-size:0.95rem;font-weight:bold">👆 Pointer</button>
+    <button id="mic-btn" onclick="toggleMic()" disabled style="background:#0891b2;color:#fff;padding:0.6rem 1.5rem;border-radius:6px;border:none;cursor:pointer;font-size:0.95rem;font-weight:bold;opacity:0.5">🎤 Mic: Off</button>
+  </div>
+</div>
+
+<!-- Classroom Creation Modal -->
+<div id="classroom-modal">
+  <div id="classroom-modal-content">
+    <h3>🏠 Create Classroom</h3>
+    <input id="room-code" placeholder="Room Code (e.g. MATH-101)" />
+    <input id="room-password" type="password" placeholder="Password (optional)" />
+    <button onclick="createClassroom()">Create Classroom</button>
+    <button onclick="hideClassroomModal()" style="background:#64748b">Cancel</button>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+let socket = null;
+let isBroadcasting = false;
+let whiteboardActive = false;
+let pointerActive = false;
+let roomCode = null;
+let teacherName = 'Teacher';
+let localStream = null;
+let micStream = null;
+let micEnabled = false;
+const peerConnections = new Map();
+const pendingCandidatesMap = new Map(); // buffer ICE candidates until answer is set
+const RTC_CONFIG = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+
+// Read teacher name from input on change
+document.getElementById('teacher-name-input').addEventListener('input', (e) => {
+  teacherName = e.target.value.trim() || 'Teacher';
+});
+
+// Auto-connect on page load
+window.addEventListener('load', () => {
+  socket = io({
+    transports: ['websocket'],
+    upgrade: false
+  });
+  
+  socket.on('connect', () => {
+    console.log('[Socket] Connected');
+  });
+  
+  socket.on('connect_error', (error) => {
+    console.error('[Socket] Connection error:', error);
+  });
+  
+  socket.on('teacher:student-joined', ({ studentId, studentName, totalStudents }) => {
+    addStudent(studentId, studentName);
+    document.getElementById('student-count').textContent = totalStudents;
+    // If already broadcasting, send offer to new student
+    if (isBroadcasting && localStream) {
+      createPeerForStudent(studentId, studentName);
+    }
+  });
+  
+  socket.on('teacher:student-left', ({ studentId, studentName, totalStudents }) => {
+    removeStudent(studentId);
+    document.getElementById('student-count').textContent = totalStudents;
+    closePeer(studentId);
+  });
+  
+  socket.on('student:hand-raised', ({ studentId, studentName }) => {
+    markHandRaised(studentId, true);
+  });
+  
+  socket.on('student:hand-lowered', ({ studentId }) => {
+    markHandRaised(studentId, false);
+  });
+
+  // Handle answers from students
+  socket.on('webrtc:answer', async ({ fromSocketId, answer }) => {
+    const pc = peerConnections.get(fromSocketId);
+    if (!pc) return;
+    await pc.setRemoteDescription(new RTCSessionDescription(answer)).catch(console.error);
+    console.log('[WebRTC] Answer set for', fromSocketId);
+    // Flush any ICE candidates that arrived before the answer
+    const buffered = pendingCandidatesMap.get(fromSocketId) || [];
+    for (const c of buffered) {
+      await pc.addIceCandidate(new RTCIceCandidate(c)).catch(console.error);
+    }
+    pendingCandidatesMap.delete(fromSocketId);
+  });
+
+  // Handle ICE candidates from students (buffer if answer not yet processed)
+  socket.on('webrtc:ice-candidate', ({ fromSocketId, candidate }) => {
+    const pc = peerConnections.get(fromSocketId);
+    if (!pc || !candidate) return;
+    if (pc.remoteDescription) {
+      pc.addIceCandidate(new RTCIceCandidate(candidate)).catch(console.error);
+    } else {
+      if (!pendingCandidatesMap.has(fromSocketId)) pendingCandidatesMap.set(fromSocketId, []);
+      pendingCandidatesMap.get(fromSocketId).push(candidate);
+    }
+  });
+});
+
+function showClassroomModal() {
+  document.getElementById('classroom-modal').style.display = 'flex';
+}
+
+function hideClassroomModal() {
+  document.getElementById('classroom-modal').style.display = 'none';
+}
+
+function createClassroom() {
+  const code = document.getElementById('room-code').value.trim().toUpperCase();
+  const password = document.getElementById('room-password').value;
+  
+  if (!code) {
+    alert('Please enter a room code');
+    return;
+  }
+  
+  roomCode = code;
+  
+  socket.emit('teacher:create-room', {
+    roomCode: code,
+    password: password || null,
+    teacherName: teacherName,
+    sessionToken: 'no-auth'
+  }, (res) => {
+    if (res.success) {
+      hideClassroomModal();
+      document.getElementById('start-btn').disabled = false;
+      document.getElementById('start-btn').style.opacity = '1';
+      document.getElementById('start-btn').style.cursor = 'pointer';
+      document.getElementById('create-room-btn').textContent = `🏠 Room: ${code}`;
+      document.getElementById('create-room-btn').disabled = true;
+      alert(`Classroom "${code}" created successfully!`);
+    } else {
+      alert('Error creating classroom: ' + res.error);
+    }
+  });
+}
+
+function addStudent(id, name) {
+  const list = document.getElementById('student-list');
+  const div = document.createElement('div');
+  div.className = 'student-item';
+  div.id = 'student-' + id;
+  div.innerHTML = `<span>${name}</span>`;
+  list.appendChild(div);
+}
+
+function removeStudent(id) {
+  const el = document.getElementById('student-' + id);
+  if (el) el.remove();
+}
+
+function markHandRaised(id, raised) {
+  const el = document.getElementById('student-' + id);
+  if (el) el.classList.toggle('hand-raised', raised);
+}
+
+async function startBroadcast() {
+  try {
+    localStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+
+    // Request mic upfront so it's included in the initial WebRTC offer
+    try {
+      micStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      // Start muted — teacher toggles when ready
+      micStream.getAudioTracks().forEach(t => { t.enabled = false; });
+    } catch (e) {
+      console.warn('[Mic] Permission denied or no mic:', e.message);
+      micStream = null;
+    }
+
+    isBroadcasting = true;
+    document.getElementById('start-btn').style.display = 'none';
+    document.getElementById('stop-btn').style.display = 'inline-block';
+
+    const micBtn = document.getElementById('mic-btn');
+    if (micStream) {
+      micBtn.disabled = false;
+      micBtn.style.opacity = '1';
+      micBtn.style.cursor = 'pointer';
+      micBtn.textContent = '🎤 Mic: Muted';
+    } else {
+      micBtn.textContent = '🎤 No Mic';
+    }
+
+    const video = document.createElement('video');
+    video.srcObject = localStream;
+    video.autoplay = true;
+    video.muted = true;
+    video.style.cssText = 'width:100%;height:100%;object-fit:contain;';
+    document.getElementById('broadcast-area').innerHTML = '';
+    document.getElementById('broadcast-area').appendChild(video);
+
+    socket.emit('teacher:start-broadcast', {}, (res) => {
+      if (res && res.students) {
+        res.students.forEach(s => createPeerForStudent(s.socketId, s.name));
+      }
+    });
+
+    localStream.getVideoTracks()[0].addEventListener('ended', stopBroadcast);
+  } catch (err) {
+    console.error('Screen share error:', err);
+    alert('Could not start screen share: ' + err.message);
+  }
+}
+
+function toggleMic() {
+  if (!micStream) { alert('No microphone available'); return; }
+  const btn = document.getElementById('mic-btn');
+  micEnabled = !micEnabled;
+  micStream.getAudioTracks().forEach(t => { t.enabled = micEnabled; });
+  btn.textContent = micEnabled ? '🔴 Mic: ON' : '🎤 Mic: Muted';
+  btn.style.background  = micEnabled ? '#dc2626' : '#0891b2';
+}
+
+async function handleStudentOffer(studentId, offer) {
+  const pc = new RTCPeerConnection(RTC_CONFIG);
+  peerConnections.set(studentId, pc);
+
+  // Add all local stream tracks to peer connection
+  if (localStream) {
+    localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+  }
+
+  pc.onicecandidate = (e) => {
+    if (e.candidate) {
+      socket.emit('webrtc:ice-candidate', {
+        targetSocketId: studentId,
+        candidate: e.candidate.toJSON()
+      });
+    }
+  };
+
+  await pc.setRemoteDescription(new RTCSessionDescription(offer));
+  const answer = await pc.createAnswer();
+  await pc.setLocalDescription(answer);
+
+  socket.emit('webrtc:answer', {
+    targetSocketId: studentId,
+    answer: pc.localDescription
+  });
+}
+
+async function createPeerForStudent(studentId, studentName) {
+  const pc = new RTCPeerConnection(RTC_CONFIG);
+  peerConnections.set(studentId, pc);
+
+  if (localStream) {
+    localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+  }
+  // Add mic track into the same stream as video so student gets one unified stream
+  if (micStream && localStream) {
+    micStream.getAudioTracks().forEach(track => pc.addTrack(track, localStream));
+  }
+
+  pc.onicecandidate = (e) => {
+    if (e.candidate) {
+      socket.emit('webrtc:ice-candidate', {
+        targetSocketId: studentId,
+        candidate: e.candidate.toJSON()
+      });
+    }
+  };
+
+  const offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
+
+  socket.emit('webrtc:offer', {
+    targetSocketId: studentId,
+    offer: pc.localDescription,
+    teacherName
+  });
+}
+
+function closePeer(studentId) {
+  const pc = peerConnections.get(studentId);
+  if (pc) { pc.close(); peerConnections.delete(studentId); }
+  pendingCandidatesMap.delete(studentId);
+}
+
+function stopBroadcast() {
+  isBroadcasting = false;
+
+  if (localStream) {
+    localStream.getTracks().forEach(t => t.stop());
+    localStream = null;
+  }
+
+  // Stop mic too
+  if (micStream) {
+    micStream.getAudioTracks().forEach(t => t.stop());
+    micStream = null;
+  }
+  micEnabled = false;
+  const micBtn = document.getElementById('mic-btn');
+  micBtn.textContent = '🎤 Mic: Off';
+  micBtn.style.background = '#0891b2';
+  micBtn.disabled = true;
+  micBtn.style.opacity = '0.5';
+  micBtn.style.cursor = 'not-allowed';
+
+  peerConnections.forEach((pc) => pc.close());
+  peerConnections.clear();
+
+  document.getElementById('start-btn').style.display = 'inline-block';
+  document.getElementById('stop-btn').style.display = 'none';
+
+  document.getElementById('broadcast-area').innerHTML = `
+    <div style="text-align:center;color:#94a3b8">
+      <div style="font-size:3rem;margin-bottom:1rem">🖥️</div>
+      <div>Click "Start Broadcast" to begin sharing</div>
+    </div>
+  `;
+
+  socket.emit('teacher:stop-broadcast');
+}
+
+function toggleWhiteboard() {
+  whiteboardActive = !whiteboardActive;
+  document.getElementById('whiteboard-area').style.display = whiteboardActive ? 'block' : 'none';
+  document.getElementById('broadcast-area').style.display = whiteboardActive ? 'none' : 'flex';
+  document.getElementById('whiteboard-btn').style.background = whiteboardActive ? '#dc2626' : '#f59e0b';
+}
+
+let _pointerThrottle = null;
+
+function togglePointer() {
+  pointerActive = !pointerActive;
+  const btn = document.getElementById('pointer-btn');
+  const dot = document.getElementById('teacher-pointer');
+  btn.style.background = pointerActive ? '#dc2626' : '#8b5cf6';
+  btn.textContent = pointerActive ? '🔴 Pointer ON' : '👆 Pointer';
+
+  if (pointerActive) {
+    const area = document.getElementById('broadcast-area');
+    area.addEventListener('mousemove', handlePointerMove);
+    dot.style.display = 'block';
+  } else {
+    document.getElementById('broadcast-area').removeEventListener('mousemove', handlePointerMove);
+    dot.style.display = 'none';
+    socket.emit('pointer:hide');
+  }
+}
+
+function handlePointerMove(e) {
+  const area = document.getElementById('broadcast-area');
+  const rect = area.getBoundingClientRect();
+  const x = (e.clientX - rect.left) / rect.width;
+  const y = (e.clientY - rect.top) / rect.height;
+
+  // Move teacher-side dot
+  const dot = document.getElementById('teacher-pointer');
+  dot.style.left = `${(e.clientX - rect.left)}px`;
+  dot.style.top  = `${(e.clientY - rect.top)}px`;
+
+  // Throttle socket emit to ~30fps
+  if (_pointerThrottle) return;
+  _pointerThrottle = setTimeout(() => { _pointerThrottle = null; }, 33);
+  socket.emit('pointer:move', { x, y, mode: 'laser' });
+}
+
+function showSection(section) {
+  document.querySelectorAll('.sidebar-btn').forEach(btn => btn.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('broadcast-area').style.display = section === 'broadcast' ? 'flex' : 'none';
+  document.getElementById('whiteboard-area').style.display = section === 'whiteboard' ? 'block' : 'none';
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,507 @@
+<!-- student-app/public/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Classroom Viewer</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #0a0a0f; color: #fff; font-family: 'Segoe UI', sans-serif; height: 100vh; display: flex; flex-direction: column; }
+
+    /* ── Step 1: Connect ── */
+    #connect-screen {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; height: 100vh; gap: 1rem;
+    }
+    #connect-screen h1 { font-size: 2rem; color: #4f9eff; }
+    #connect-screen input {
+      padding: 0.75rem 1rem; width: 300px; border-radius: 8px;
+      border: 1px solid #333; background: #1a1a2e; color: #fff; font-size: 1rem;
+    }
+    #connect-btn {
+      padding: 0.75rem 2rem; background: #4f9eff; color: #fff;
+      border: none; border-radius: 8px; font-size: 1rem; cursor: pointer; width: 300px;
+    }
+    #connect-btn:hover { background: #2d7ddd; }
+
+    /* ── Step 2: Browse Rooms ── */
+    #browse-screen {
+      display: none; flex-direction: column; align-items: center;
+      min-height: 100vh; padding: 2rem 1rem; gap: 1.5rem;
+    }
+    #browse-screen h2 { font-size: 1.6rem; color: #4f9eff; }
+    #rooms-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1rem; width: 100%; max-width: 900px;
+    }
+    .room-card {
+      background: #1a1a2e; border: 2px solid #2d3748; border-radius: 14px;
+      padding: 1.4rem 1.2rem; cursor: pointer; transition: all 0.2s;
+      display: flex; flex-direction: column; gap: 0.5rem;
+    }
+    .room-card:hover { border-color: #4f9eff; background: #1e2a45; transform: translateY(-2px); box-shadow: 0 6px 24px rgba(79,158,255,0.15); }
+    .room-card .rc-teacher { font-size: 1.1rem; font-weight: bold; color: #fff; }
+    .room-card .rc-code { font-size: 0.85rem; color: #4f9eff; font-family: monospace; }
+    .room-card .rc-meta { display: flex; gap: 1rem; font-size: 0.8rem; color: #9ca3af; margin-top: 0.3rem; }
+    .room-card .rc-live { display: inline-flex; align-items: center; gap: 5px; font-size: 0.75rem; font-weight: bold; color: #22c55e; }
+    .room-card .rc-live::before { content:''; width:8px; height:8px; border-radius:50%; background:#22c55e; animation: pulse 1.5s infinite; }
+    .room-card .rc-locked { color: #f59e0b; font-size: 0.8rem; }
+    #no-rooms {
+      color: #6b7280; text-align: center; padding: 3rem;
+      border: 2px dashed #2d3748; border-radius: 14px; width: 100%; max-width: 500px;
+    }
+    #refresh-btn {
+      padding: 0.5rem 1.5rem; background: #2d3748; border: none; border-radius: 8px;
+      color: #9ca3af; cursor: pointer; font-size: 0.9rem;
+    }
+    #refresh-btn:hover { background: #374151; color: #fff; }
+    #back-btn {
+      padding: 0.4rem 1rem; background: transparent; border: 1px solid #374151;
+      border-radius: 8px; color: #9ca3af; cursor: pointer; font-size: 0.85rem;
+    }
+
+    /* ── Password modal ── */
+    #pw-modal {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+      display: none; align-items: center; justify-content: center; z-index: 2000;
+    }
+    #pw-box {
+      background: #1e293b; border-radius: 14px; padding: 2rem; width: 320px;
+      display: flex; flex-direction: column; gap: 1rem;
+    }
+    #pw-box h3 { color: #fff; }
+    #pw-input {
+      padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid #334155;
+      background: #0f172a; color: #fff; font-size: 1rem; width: 100%;
+    }
+    #pw-ok { padding: 0.75rem; background: #4f9eff; border: none; border-radius: 8px; color: #fff; cursor: pointer; font-size: 1rem; }
+    #pw-cancel { padding: 0.5rem; background: transparent; border: none; color: #6b7280; cursor: pointer; font-size: 0.9rem; }
+
+    #classroom-view { display: none; flex: 1; flex-direction: column; }
+
+    #top-bar {
+      height: 44px; background: #111827; display: flex;
+      align-items: center; padding: 0 1rem; gap: 1rem; border-bottom: 1px solid #1f2937;
+    }
+    #status-dot { width: 10px; height: 10px; border-radius: 50%; background: #ef4444; }
+    #status-dot.live { background: #22c55e; animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+    #main-area { flex: 1; display: flex; overflow: hidden; }
+
+    #video-wrapper { flex: 1; position: relative; background: #000; display: flex; align-items: center; justify-content: center; }
+    #teacher-video { max-width: 100%; max-height: 100%; display: none; }
+    #waiting-screen { display: flex; flex-direction: column; align-items: center; gap: 1rem; color: #9ca3af; }
+    #waiting-screen .icon { font-size: 4rem; }
+
+    #whiteboard-overlay {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none;
+    }
+
+    #sidebar {
+      width: 260px; background: #111827; border-left: 1px solid #1f2937;
+      display: flex; flex-direction: column; padding: 0.5rem;
+    }
+
+    #chat-container { flex: 1; overflow-y: auto; padding: 0.5rem; display: flex; flex-direction: column; gap: 0.4rem; }
+    .chat-msg { padding: 0.4rem 0.6rem; border-radius: 6px; font-size: 0.85rem; }
+    .chat-msg.teacher { background: #1e3a5f; border-left: 3px solid #4f9eff; }
+    .chat-msg.student { background: #1f2937; }
+    .chat-msg .sender { font-weight: bold; font-size: 0.75rem; margin-bottom: 2px; }
+
+    #chat-input-area { display: flex; gap: 0.5rem; padding: 0.5rem 0; }
+    #chat-input { flex: 1; padding: 0.5rem; background: #1f2937; border: 1px solid #374151; border-radius: 6px; color: #fff; font-size: 0.85rem; }
+    #send-btn { padding: 0.5rem 0.75rem; background: #4f9eff; border: none; border-radius: 6px; color: #fff; cursor: pointer; }
+
+    #raise-hand-btn {
+      margin: 0.5rem; padding: 0.6rem; background: #f59e0b; border: none;
+      border-radius: 8px; color: #000; font-weight: bold; cursor: pointer; font-size: 0.9rem;
+    }
+    #raise-hand-btn.raised { background: #dc2626; color: #fff; }
+
+    #bottom-bar {
+      height: 40px; background: #111827; display: flex; align-items: center;
+      padding: 0 1rem; gap: 1rem; border-top: 1px solid #1f2937; font-size: 0.8rem; color: #6b7280;
+    }
+    #fullscreen-btn { margin-left: auto; padding: 0.3rem 0.75rem; background: #374151; border: none; border-radius: 6px; color: #fff; cursor: pointer; }
+  </style>
+</head>
+<body>
+
+<!-- STEP 1: CONNECT -->
+<div id="connect-screen">
+  <h1>📡 Classroom Viewer</h1>
+  <p style="color:#9ca3af">Enter your name to browse live classrooms</p>
+  <input id="student-name" placeholder="Your Name" />
+  <button id="connect-btn">Browse Classrooms →</button>
+  <p id="connect-error" style="color:#ef4444;display:none"></p>
+</div>
+
+<!-- STEP 2: BROWSE ROOMS -->
+<div id="browse-screen">
+  <div style="width:100%;max-width:900px;display:flex;justify-content:space-between;align-items:center">
+    <button id="back-btn">← Back</button>
+    <h2>🏫 Active Classrooms</h2>
+    <button id="refresh-btn">🔄 Refresh</button>
+  </div>
+  <div id="rooms-grid"></div>
+  <p id="browse-error" style="color:#ef4444;display:none"></p>
+</div>
+
+<!-- PASSWORD MODAL -->
+<div id="pw-modal">
+  <div id="pw-box">
+    <h3>🔒 This room is password protected</h3>
+    <input id="pw-input" type="password" placeholder="Enter room password" />
+    <button id="pw-ok">Join Room</button>
+    <button id="pw-cancel">Cancel</button>
+  </div>
+</div>
+
+<!-- CLASSROOM VIEW -->
+<div id="classroom-view">
+  <div id="top-bar">
+    <div id="status-dot"></div>
+    <span id="status-text">Waiting for broadcast...</span>
+    <span style="margin-left:auto;color:#9ca3af;font-size:0.8rem" id="room-label"></span>
+  </div>
+
+  <div id="main-area">
+    <div id="video-wrapper">
+      <div id="waiting-screen">
+        <div class="icon">🖥️</div>
+        <div>Waiting for teacher to start...</div>
+      </div>
+      <video id="teacher-video" autoplay playsinline></video>
+      <canvas id="whiteboard-overlay"></canvas>
+    </div>
+    <div id="sidebar">
+      <div id="chat-container"></div>
+      <div id="chat-input-area">
+        <input id="chat-input" placeholder="Type a message..." maxlength="300" />
+        <button id="send-btn">➤</button>
+      </div>
+      <button id="raise-hand-btn">✋ Raise Hand</button>
+    </div>
+  </div>
+
+  <div id="bottom-bar">
+    <span id="student-count-label">Students: —</span>
+    <button id="fullscreen-btn">⛶ Fullscreen</button>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+// ─── App State ────────────────────────────────────────────────────
+let socket = null;
+let peerConnection = null;
+let handRaised = false;
+let teacherSocketId = null;
+let roomCode = null;
+let studentName = '';
+let serverUrl = '';
+let pendingJoinRoom = null;   // room card clicked, waiting for password
+const RTC_CONFIG = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+let pendingCandidates = [];
+
+// ─── DOM ──────────────────────────────────────────────────────────
+const connectScreen  = document.getElementById('connect-screen');
+const browseScreen   = document.getElementById('browse-screen');
+const classroomView  = document.getElementById('classroom-view');
+const teacherVideo   = document.getElementById('teacher-video');
+const waitingScreen  = document.getElementById('waiting-screen');
+const statusDot      = document.getElementById('status-dot');
+const statusText     = document.getElementById('status-text');
+const chatContainer  = document.getElementById('chat-container');
+const chatInput      = document.getElementById('chat-input');
+const sendBtn        = document.getElementById('send-btn');
+const raiseHandBtn   = document.getElementById('raise-hand-btn');
+const fullscreenBtn  = document.getElementById('fullscreen-btn');
+
+// ─── Server IP (hardcoded) ───────────────────────────────────────
+const SERVER_IP = '172.17.100.152';
+
+// ─── STEP 1: Connect to server & browse rooms ─────────────────────
+document.getElementById('connect-btn').addEventListener('click', () => {
+  const name = document.getElementById('student-name').value.trim();
+  const err  = document.getElementById('connect-error');
+  err.style.display = 'none';
+  if (!name) { err.textContent = 'Please enter your name'; err.style.display = 'block'; return; }
+
+  studentName = name;
+  serverUrl   = `https://${SERVER_IP}:3000`;
+
+  const btn = document.getElementById('connect-btn');
+  btn.textContent = 'Connecting...';
+  btn.disabled = true;
+
+  if (socket) { socket.disconnect(); }
+  socket = io(serverUrl, { transports: ['websocket'], upgrade: false });
+
+  socket.on('connect', () => {
+    btn.textContent = 'Browse Classrooms →';
+    btn.disabled = false;
+    connectScreen.style.display = 'none';
+    browseScreen.style.display  = 'flex';
+    loadRooms();
+    socket.on('rooms:updated', ({ rooms }) => renderRooms(rooms));
+    // Register WebRTC listeners NOW so offers are never missed
+    setupSocketListeners();
+  });
+
+  socket.on('connect_error', () => {
+    err.textContent = `Cannot connect to ${serverUrl} — check the IP and try again`;
+    err.style.display = 'block';
+    btn.textContent = 'Browse Classrooms →';
+    btn.disabled = false;
+  });
+});
+
+// ─── STEP 2: Browse rooms ─────────────────────────────────────────
+function loadRooms() {
+  socket.emit('get-rooms', ({ rooms }) => renderRooms(rooms));
+}
+
+function renderRooms(rooms) {
+  const grid = document.getElementById('rooms-grid');
+  grid.innerHTML = '';
+  if (!rooms || rooms.length === 0) {
+    grid.innerHTML = `<div id="no-rooms">
+      <div style="font-size:3rem;margin-bottom:1rem">🏫</div>
+      <div>No active classrooms right now</div>
+      <div style="font-size:0.85rem;margin-top:0.5rem;color:#4b5563">Ask your teacher to create a classroom</div>
+    </div>`;
+    return;
+  }
+  rooms.forEach(room => {
+    const card = document.createElement('div');
+    card.className = 'room-card';
+    card.innerHTML = `
+      <div class="rc-teacher">👨‍🏫 ${escHtml(room.teacherName)}</div>
+      <div class="rc-code">🏷️ ${escHtml(room.code)}</div>
+      <div class="rc-meta">
+        <span>👥 ${room.studentCount} student${room.studentCount !== 1 ? 's' : ''}</span>
+        ${room.broadcastActive ? '<span class="rc-live">LIVE</span>' : '<span style="color:#6b7280">⏸ Not broadcasting</span>'}
+        ${room.hasPassword ? '<span class="rc-locked">🔒 Password required</span>' : ''}
+      </div>`;
+    card.addEventListener('click', () => onRoomClick(room));
+    grid.appendChild(card);
+  });
+}
+
+function onRoomClick(room) {
+  pendingJoinRoom = room;
+  if (room.hasPassword) {
+    document.getElementById('pw-input').value = '';
+    document.getElementById('pw-modal').style.display = 'flex';
+    setTimeout(() => document.getElementById('pw-input').focus(), 100);
+  } else {
+    joinRoom(room.code, '');
+  }
+}
+
+document.getElementById('refresh-btn').addEventListener('click', loadRooms);
+document.getElementById('back-btn').addEventListener('click', () => {
+  browseScreen.style.display = 'none';
+  connectScreen.style.display = 'flex';
+  if (socket) { socket.disconnect(); socket = null; }
+  document.getElementById('connect-btn').textContent = 'Browse Classrooms →';
+  document.getElementById('connect-btn').disabled = false;
+});
+
+// ─── Password modal ───────────────────────────────────────────────
+document.getElementById('pw-ok').addEventListener('click', () => {
+  const pw = document.getElementById('pw-input').value;
+  document.getElementById('pw-modal').style.display = 'none';
+  if (pendingJoinRoom) joinRoom(pendingJoinRoom.code, pw);
+});
+document.getElementById('pw-cancel').addEventListener('click', () => {
+  document.getElementById('pw-modal').style.display = 'none';
+  pendingJoinRoom = null;
+});
+document.getElementById('pw-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('pw-ok').click();
+});
+
+// ─── STEP 3: Join a room ──────────────────────────────────────────
+function joinRoom(code, password) {
+  const browseErr = document.getElementById('browse-error');
+  browseErr.style.display = 'none';
+
+  socket.emit('student:join-room', { roomCode: code, password, studentName }, (res) => {
+    if (res.error) {
+      browseErr.textContent = res.error;
+      browseErr.style.display = 'block';
+      return;
+    }
+    teacherSocketId = res.teacherSocketId;
+    roomCode = code;
+    document.getElementById('room-label').textContent = `Room: ${code}`;
+    browseScreen.style.display = 'none';
+    classroomView.style.display = 'flex';
+    // Flush any buffered offer that arrived before teacherSocketId was set
+    if (pendingOffer) {
+      const po = pendingOffer; pendingOffer = null;
+      handleOffer(po.fromSocketId, po.offer);
+    }
+  });
+}
+
+// ─── Handle WebRTC offer from teacher ────────────────────────────
+async function handleOffer(fromSocketId, offer) {
+  console.log('[WebRTC] Handling offer from teacher');
+  if (peerConnection) { peerConnection.close(); }
+  pendingCandidates = [];
+
+  peerConnection = new RTCPeerConnection(RTC_CONFIG);
+  peerConnection.onconnectionstatechange = () =>
+    console.log('[WebRTC] State:', peerConnection.connectionState);
+
+  peerConnection.ontrack = (event) => {
+    console.log('[WebRTC] Track received:', event.track.kind);
+    // Only update srcObject on video track (or first track) to avoid
+    // an audio-only stream overwriting the video stream
+    if (event.track.kind === 'video' || !teacherVideo.srcObject) {
+      teacherVideo.srcObject = event.streams[0];
+      teacherVideo.style.display = 'block';
+      waitingScreen.style.display = 'none';
+      teacherVideo.play().catch(e => console.error('[Video]', e));
+      setStatus('live', 'Live');
+    }
+  };
+
+  peerConnection.onicecandidate = (e) => {
+    if (e.candidate) socket.emit('webrtc:ice-candidate', {
+      targetSocketId: teacherSocketId, candidate: e.candidate.toJSON()
+    });
+  };
+
+  await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+  for (const c of pendingCandidates) {
+    await peerConnection.addIceCandidate(new RTCIceCandidate(c)).catch(console.error);
+  }
+  pendingCandidates = [];
+
+  const answer = await peerConnection.createAnswer();
+  await peerConnection.setLocalDescription(answer);
+  socket.emit('webrtc:answer', { targetSocketId: teacherSocketId, answer: peerConnection.localDescription });
+}
+
+// ─── Socket & WebRTC Listeners (registered once at connect time) ──
+function setupSocketListeners() {
+  socket.on('broadcast:started', () => setStatus('waiting', 'Broadcast started — connecting...'));
+
+  socket.on('webrtc:offer', ({ fromSocketId, offer }) => {
+    if (!teacherSocketId) {
+      console.log('[WebRTC] Buffering offer (teacherSocketId not set yet)');
+      pendingOffer = { fromSocketId, offer };
+      return;
+    }
+    if (fromSocketId !== teacherSocketId) return;
+    handleOffer(fromSocketId, offer);
+  });
+
+  socket.on('webrtc:ice-candidate', ({ fromSocketId, candidate }) => {
+    if (fromSocketId !== teacherSocketId) return;
+    if (!peerConnection || !peerConnection.remoteDescription) {
+      pendingCandidates.push(candidate);
+    } else {
+      peerConnection.addIceCandidate(new RTCIceCandidate(candidate)).catch(console.error);
+    }
+  });
+
+  socket.on('broadcast:stopped', () => {
+    setStatus('paused', 'Broadcast paused');
+    teacherVideo.style.display = 'none';
+    waitingScreen.style.display = 'flex';
+  });
+
+  socket.on('broadcast:teacher-left', ({ message }) => {
+    setStatus('offline', message || 'Teacher disconnected');
+    teacherVideo.style.display = 'none';
+    waitingScreen.style.display = 'flex';
+    if (peerConnection) { peerConnection.close(); peerConnection = null; }
+  });
+
+  socket.on('chat:message', ({ senderName, senderRole, message }) =>
+    appendChat(senderName, senderRole, message));
+
+  socket.on('pointer:move', ({ x, y, mode }) => updatePointer(x, y, mode));
+  socket.on('pointer:hide', hidePointer);
+}
+
+// ─── Chat ─────────────────────────────────────────────────────────
+sendBtn.addEventListener('click', sendChat);
+chatInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendChat(); });
+function sendChat() {
+  const msg = chatInput.value.trim();
+  if (!msg || !socket) return;
+  socket.emit('chat:message', { message: msg });
+  chatInput.value = '';
+}
+function appendChat(name, role, message) {
+  const div = document.createElement('div');
+  div.className = `chat-msg ${role}`;
+  div.innerHTML = `<div class="sender">${role === 'teacher' ? '👨‍🏫 ' : ''}${escHtml(name)}</div>${escHtml(message)}`;
+  chatContainer.appendChild(div);
+  chatContainer.scrollTop = chatContainer.scrollHeight;
+}
+
+// ─── Raise Hand ──────────────────────────────────────────────────
+raiseHandBtn.addEventListener('click', () => {
+  if (!socket) return;
+  handRaised = !handRaised;
+  raiseHandBtn.textContent = handRaised ? '✋ Lower Hand' : '✋ Raise Hand';
+  raiseHandBtn.classList.toggle('raised', handRaised);
+  socket.emit(handRaised ? 'student:raise-hand' : 'student:lower-hand');
+});
+
+// ─── Fullscreen ───────────────────────────────────────────────────
+fullscreenBtn.addEventListener('click', () => {
+  if (!document.fullscreenElement) document.getElementById('video-wrapper').requestFullscreen();
+  else document.exitFullscreen();
+});
+
+// ─── Pointer Rendering ────────────────────────────────────────────
+let pointerEl = null;
+function ensurePointer() {
+  if (!pointerEl) {
+    pointerEl = document.createElement('div');
+    Object.assign(pointerEl.style, {
+      position: 'fixed', borderRadius: '50%', pointerEvents: 'none',
+      zIndex: '9999', display: 'none', transition: 'left 0.016s, top 0.016s'
+    });
+    document.body.appendChild(pointerEl);
+  }
+}
+function updatePointer(x, y, mode) {
+  ensurePointer();
+  const modes = {
+    laser:     { w:'16px', h:'16px', bg:'rgba(255,0,0,0.9)', shadow:'0 0 12px 6px rgba(255,0,0,0.5)' },
+    highlight: { w:'50px', h:'50px', bg:'rgba(255,255,0,0.35)', shadow:'0 0 0 3px rgba(255,200,0,0.8)' },
+    normal:    { w:'14px', h:'14px', bg:'rgba(0,120,255,0.8)', shadow:'0 0 8px 2px rgba(0,120,255,0.4)' }
+  };
+  const m = modes[mode] || modes.normal;
+  Object.assign(pointerEl.style, {
+    display: 'block',
+    left: `${x * window.innerWidth - 10}px`, top: `${y * window.innerHeight - 10}px`,
+    width: m.w, height: m.h, background: m.bg, boxShadow: m.shadow
+  });
+}
+function hidePointer() { if (pointerEl) pointerEl.style.display = 'none'; }
+
+// ─── UI Helpers ───────────────────────────────────────────────────
+function setStatus(state, text) {
+  statusText.textContent = text;
+  statusDot.className = '';
+  if (state === 'live') statusDot.classList.add('live');
+}
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+</body>
+</html>
