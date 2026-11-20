@@ -1,5 +1,7 @@
 <div align="center">
 
+![LAN Classroom Broadcasting System](docs/social-preview.png)
+
 # 🖥️ LAN-Based Classroom Broadcasting System
 
 **Real-time screen and voice broadcasting for classrooms — over local Wi-Fi, with zero internet dependency.**
@@ -10,6 +12,8 @@
 ![SQLite](https://img.shields.io/badge/SQLite-3-003B57?logo=sqlite&logoColor=white)
 ![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-informational)
 ![License](https://img.shields.io/badge/License-MIT-green)
+
+**Built by [Saif Ur Rehman Akhtar](https://github.com/saifofficial-dev)**
 
 </div>
 
@@ -280,6 +284,19 @@ classroom-lan/
 
 ---
 
+## 👨‍💻 Author
+
+**Saif Ur Rehman Akhtar**
+AI Automation Engineer, Khalis Group of Companies · Co-Founder & Technical Manager, Flow Matrix
+
+[![GitHub](https://img.shields.io/badge/GitHub-saifofficial--dev-181717?logo=github&logoColor=white)](https://github.com/saifofficial-dev)
+
+If this project helped you, consider giving it a ⭐ on GitHub.
+
+---
+
 ## 📜 License
 
 Released under the **MIT License** — free for educational and institutional use.
+
+© 2026 Saif Ur Rehman Akhtar
