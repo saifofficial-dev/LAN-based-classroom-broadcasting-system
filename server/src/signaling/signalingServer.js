@@ -5,6 +5,9 @@ const { verifySessionToken } = require('../utils/crypto');
 
 const rooms = new RoomManager();
 
+// Restore any rooms that existed before a server restart
+rooms.loadSnapshot();
+
 function setupSignaling(io) {
 
   io.on('connection', (socket) => {
@@ -20,6 +23,8 @@ function setupSignaling(io) {
     });
 
     // Teacher creates/opens classroom
+    // If the room was restored from a snapshot (pendingTeacher=true), the teacher
+    // is allowed to reclaim it — no "already exists" error.
     socket.on('teacher:create-room', async (data, callback) => {
       const { roomCode, password, teacherName, sessionToken } = data;
 
@@ -28,20 +33,35 @@ function setupSignaling(io) {
           return callback({ error: 'Unauthorized' });
         }
 
-        const room = rooms.createRoom(roomCode, {
-          teacherSocketId: socket.id,
-          teacherName,
-          password,
-          teacherIp: clientIp,
-          createdAt: Date.now()
-        });
+        // Check if this is a snapshot-restored room that the teacher is reclaiming
+        const existingRoom = rooms.getRoom(roomCode);
+        let room;
+
+        if (existingRoom && existingRoom.pendingTeacher) {
+          // ── Reclaim: update teacher socket and mark as active ──────
+          existingRoom.teacherSocketId = socket.id;
+          existingRoom.teacherIp       = clientIp;
+          existingRoom.teacherName     = teacherName;
+          existingRoom.pendingTeacher  = false;
+          room = existingRoom;
+          logger.info(`[Room] Reclaimed from snapshot: ${roomCode} by ${teacherName}`);
+        } else {
+          // ── Create fresh room ──────────────────────────────────────
+          room = rooms.createRoom(roomCode, {
+            teacherSocketId: socket.id,
+            teacherName,
+            password,
+            teacherIp: clientIp,
+            createdAt: Date.now()
+          });
+          logger.info(`[Room] Created: ${roomCode} by ${teacherName}`);
+        }
 
         socket.join(`room:${roomCode}`);
-        socket.roomCode = roomCode;
-        socket.role = 'teacher';
+        socket.roomCode    = roomCode;
+        socket.role        = 'teacher';
         socket.displayName = teacherName;
 
-        logger.info(`[Room] Created: ${roomCode} by ${teacherName}`);
         io.emit('rooms:updated', { rooms: rooms.getRoomList() });
         callback({ success: true, room: room.getPublicInfo() });
       } catch (err) {
@@ -61,19 +81,21 @@ function setupSignaling(io) {
 
         room.addStudent(socket.id, { name: studentName, ip: clientIp });
         socket.join(`room:${roomCode}`);
-        socket.roomCode = roomCode;
-        socket.role = 'student';
+        socket.roomCode    = roomCode;
+        socket.role        = 'student';
         socket.displayName = studentName;
 
-        // Notify teacher of new student
-        const teacherSocket = io.sockets.sockets.get(room.teacherSocketId);
-        if (teacherSocket) {
-          teacherSocket.emit('teacher:student-joined', {
-            studentId: socket.id,
-            studentName,
-            studentIp: clientIp,
-            totalStudents: room.getStudentCount()
-          });
+        // Notify teacher of new student (teacher may not be connected yet if still reconnecting)
+        if (room.teacherSocketId) {
+          const teacherSocket = io.sockets.sockets.get(room.teacherSocketId);
+          if (teacherSocket) {
+            teacherSocket.emit('teacher:student-joined', {
+              studentId: socket.id,
+              studentName,
+              studentIp: clientIp,
+              totalStudents: room.getStudentCount()
+            });
+          }
         }
 
         // Tell student to initiate WebRTC offer to teacher
@@ -149,6 +171,21 @@ function setupSignaling(io) {
       if (!room || socket.role !== 'teacher') return;
       room.broadcastActive = false;
       socket.to(`room:${socket.roomCode}`).emit('broadcast:stopped');
+    });
+
+    // Teacher deliberately ends the session (permanent close)
+    socket.on('teacher:end-room', ({ roomCode: code }) => {
+      const targetCode = code || socket.roomCode;
+      const room = rooms.getRoom(targetCode);
+      if (!room) return;
+      // Notify students — reconnecting:false tells them to clear their sessions
+      io.to(`room:${targetCode}`).emit('broadcast:teacher-left', {
+        message: 'Teacher ended the session',
+        reconnecting: false
+      });
+      rooms.closeRoom(targetCode);
+      io.emit('rooms:updated', { rooms: rooms.getRoomList() });
+      logger.info(`[Room] Deliberately ended by teacher: ${targetCode}`);
     });
 
     // ─── WHITEBOARD ──────────────────────────────────────────────────
@@ -261,21 +298,27 @@ function setupSignaling(io) {
       if (!room) return;
 
       if (socket.role === 'teacher') {
-        // Teacher left — notify all students
+        // Teacher disconnected — mark room as pendingTeacher instead of closing
+        // This allows recovery: students stay in the room waiting for teacher to return
+        room.pendingTeacher  = true;
+        room.teacherSocketId = null;
         socket.to(`room:${socket.roomCode}`).emit('broadcast:teacher-left', {
-          message: 'Teacher ended the session'
+          message: 'Teacher disconnected — waiting for reconnect...',
+          reconnecting: true
         });
-        rooms.closeRoom(socket.roomCode);
+        rooms.persist();  // Save state so server restart also recovers
         io.emit('rooms:updated', { rooms: rooms.getRoomList() });
-        logger.info(`[Room] Closed: ${socket.roomCode}`);
+        logger.info(`[Room] Teacher left room ${socket.roomCode} — kept alive for reconnect`);
       } else {
         // Student left
         room.removeStudent(socket.id);
-        io.to(room.teacherSocketId).emit('teacher:student-left', {
-          studentId: socket.id,
-          studentName: socket.displayName,
-          totalStudents: room.getStudentCount()
-        });
+        if (room.teacherSocketId) {
+          io.to(room.teacherSocketId).emit('teacher:student-left', {
+            studentId: socket.id,
+            studentName: socket.displayName,
+            totalStudents: room.getStudentCount()
+          });
+        }
         io.to(`room:${socket.roomCode}`).emit('room:student-list-updated', {
           students: room.getStudentList()
         });

@@ -1,7 +1,38 @@
 // server/src/index.js
+
+// ── pkg native-module fix (must be before all other requires) ────────────────
+if (typeof process.pkg !== 'undefined') {
+  const _fs  = require('fs');
+  const _path = require('path');
+  const _os   = require('os');
+  const _mod  = require('module');
+
+  const tmpDir = _path.join(_os.tmpdir(), 'classroom-server-natives');
+  if (!_fs.existsSync(tmpDir)) _fs.mkdirSync(tmpDir, { recursive: true });
+
+  const natives = {
+    'node_sqlite3.node': _path.join(__dirname, '../node_modules/sqlite3/build/Release/node_sqlite3.node'),
+    'bcrypt_lib.node':   _path.join(__dirname, '../node_modules/bcrypt/lib/binding/napi-v3/bcrypt_lib.node')
+  };
+  for (const [name, src] of Object.entries(natives)) {
+    const dest = _path.join(tmpDir, name);
+    if (!_fs.existsSync(dest)) _fs.writeFileSync(dest, _fs.readFileSync(src));
+  }
+
+  const _orig = _mod._resolveFilename.bind(_mod);
+  _mod._resolveFilename = function(req, parent, isMain, opts) {
+    if (typeof req === 'string' && req.endsWith('.node')) {
+      const candidate = _path.join(tmpDir, _path.basename(req));
+      if (_fs.existsSync(candidate)) return candidate;
+    }
+    return _orig(req, parent, isMain, opts);
+  };
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 const express = require('express');
-const https = require('https');
-const http = require('http');
+const http    = require('http');
+const https   = require('https');
 const { Server } = require('socket.io');
 const cors = require('cors');
 const path = require('path');
@@ -14,41 +45,30 @@ const classroomRoutes = require('./api/routes/classroom');
 const sessionRoutes = require('./api/routes/sessions');
 const fileRoutes = require('./api/routes/files');
 const { detectLanIp } = require('./utils/networkUtils');
+const { startTurnServer, getIceConfig } = require('./utils/turnServer');
 const logger = require('./utils/logger');
 
 const app = express();
 
-// Detect LAN IP first (needed for SAN)
-const PORT = process.env.PORT || 3000;
-const LAN_IP = detectLanIp();
+const PORT_HTTP  = process.env.PORT      || 3000;  // students  — plain HTTP
+const PORT_HTTPS = process.env.PORT_SSL  || 3001;  // teacher   — HTTPS (secure context for screen share)
+const LAN_IP     = detectLanIp();
 
-// Generate self-signed certificate with SAN for Chrome compatibility
-console.log('[SSL] Generating self-signed certificate for', LAN_IP, '...');
+// HTTP server — students, no cert warning
+const httpServer = http.createServer(app);
+
+// HTTPS server — teacher, self-signed cert (one-time accept in browser)
 const pems = generateCert(LAN_IP);
-console.log('[SSL] Certificate ready');
+const httpsServer = https.createServer({ key: pems.key, cert: pems.cert, minVersion: 'TLSv1.2' }, app);
 
-const server = https.createServer({
-  key: pems.key,
-  cert: pems.cert,
-  minVersion: 'TLSv1.2'
-}, app);
-
-// Also redirect HTTP → HTTPS
-const httpRedirect = http.createServer((req, res) => {
-  const host = req.headers.host?.replace(/:\d+$/, '');
-  res.writeHead(301, { Location: `https://${host}:${PORT}${req.url}` });
-  res.end();
+// One Socket.IO instance shared across both servers
+const io = new Server(httpServer, {
+  cors: { origin: '*', methods: ['GET', 'POST'] },
+  transports: ['polling', 'websocket'],
+  pingTimeout: 10000,
+  pingInterval: 5000
 });
-
-const io = new Server(server, {
-  cors: {
-    origin: '*',        // LAN-only, so open CORS is fine
-    methods: ['GET', 'POST']
-  },
-  transports: ['websocket', 'polling'],   // Allow both for compatibility
-  pingTimeout: 5000,
-  pingInterval: 2500
-});
+io.attach(httpsServer);   // same rooms/events on HTTPS port too
 
 // Middleware
 app.use(express.json({ limit: '50mb' }));
@@ -64,9 +84,11 @@ app.use((req, res, next) => {
 });
 
 // Static files — serve student app
-app.use('/student', express.static(path.join(__dirname, '../../student-app/public')));
-app.use('/teacher', express.static(path.join(__dirname, '../../teacher-app/public')));
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+const isPackaged = typeof process.pkg !== 'undefined';
+const exeDir = isPackaged ? path.dirname(process.execPath) : path.join(__dirname, '..');
+app.use('/student', express.static(isPackaged ? path.join(__dirname, '../../student-app/public') : path.join(__dirname, '../../student-app/public')));
+app.use('/teacher', express.static(isPackaged ? path.join(__dirname, '../../teacher-app/public') : path.join(__dirname, '../../teacher-app/public')));
+app.use('/uploads', express.static(path.join(exeDir, 'uploads')));
 
 // API Routes
 app.use('/api/auth', authRoutes);
@@ -76,7 +98,22 @@ app.use('/api/files', fileRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', lan_ip: detectLanIp(), timestamp: Date.now() });
+  res.json({
+    status:       'ok',
+    lan_ip:       LAN_IP,
+    student_url:  `http://${LAN_IP}:${PORT_HTTP}/student`,
+    teacher_url:  `https://${LAN_IP}:${PORT_HTTPS}/teacher`,
+    timestamp:    Date.now()
+  });
+});
+
+// WebRTC ICE config (LAN TURN relay — works without internet)
+app.get('/api/ice-config', (req, res) => {
+  let host = req.hostname;
+  if (!host || host === 'localhost' || host.startsWith('127.') || host === '::1' || host === '[::1]') {
+    host = LAN_IP; // loopback relay can't reach other devices — use the LAN address
+  }
+  res.json(getIceConfig(host));
 });
 
 // Setup WebRTC signaling over Socket.IO
@@ -84,16 +121,14 @@ setupSignaling(io);
 
 async function bootstrap() {
   await initDatabase();
-  server.listen(PORT, '0.0.0.0', () => {
+  startTurnServer();
+  httpServer.listen(PORT_HTTP, '0.0.0.0', () => {
     logger.info(`=== Classroom Server Running ===`);
-    logger.info(`LAN IP:    https://${LAN_IP}:${PORT}`);
-    logger.info(`Teacher:   https://${LAN_IP}:${PORT}/teacher`);
-    logger.info(`Student:   https://${LAN_IP}:${PORT}/student`);
-    logger.info(`Note: Accept the self-signed cert warning in browser`);
+    logger.info(`Student:  http://${LAN_IP}:${PORT_HTTP}/student  (no cert)`);
+    logger.info(`Teacher:  https://${LAN_IP}:${PORT_HTTPS}/teacher  (accept cert once)`);
     logger.info(`================================`);
   });
-  // HTTP redirect on port 3001
-  httpRedirect.listen(3001, '0.0.0.0');
+  httpsServer.listen(PORT_HTTPS, '0.0.0.0');
 }
 
 bootstrap();

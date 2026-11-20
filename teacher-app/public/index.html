@@ -3,150 +3,704 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Classroom Broadcast - Teacher</title>
+  <title>KGI Classroom Portal — Teacher</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: #0f172a; color: #fff; font-family: 'Segoe UI', sans-serif; height: 100vh; display: flex; flex-direction: column; }
-
-    #dashboard { display: flex; flex: 1; flex-direction: column; }
-    
-    #top-bar {
-      height: 50px; background: #1e293b; display: flex; align-items: center;
-      padding: 0 1rem; gap: 1rem; border-bottom: 1px solid #334155;
+    :root {
+      --bg-base:    #f5f5f5;
+      --bg-surface: #ffffff;
+      --bg-panel:   #fafafa;
+      --bg-card:    #efefef;
+      --border:     #d4d4d4;
+      --border-lit: #a3a3a3;
+      --accent:     #111111;
+      --accent-lit: #333333;
+      --accent-glow: rgba(0,0,0,0.08);
+      --success:    #111111;
+      --success-lit:#333333;
+      --danger:     #111111;
+      --danger-lit: #333333;
+      --warning:    #555555;
+      --warning-lit:#777777;
+      --purple:     #111111;
+      --purple-lit: #333333;
+      --teal:       #111111;
+      --teal-lit:   #333333;
+      --text:       #0a0a0a;
+      --text-muted: #737373;
+      --text-dim:   #404040;
+      --radius:     10px;
+      --radius-sm:  6px;
     }
-    #top-bar h2 { font-size: 1.1rem; }
-    
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg-base);
+      color: var(--text);
+      font-family: 'Inter', 'Segoe UI', sans-serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      font-size: 14px;
+    }
+
+    /* ── TOP BAR ─────────────────────────────────────────── */
+    #top-bar {
+      height: 56px;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 1.25rem;
+      gap: 0;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 10;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+    .brand-logo {
+      width: 32px; height: 32px;
+      background: #111111;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 17px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      flex-shrink: 0;
+    }
+    .brand-text { display: flex; flex-direction: column; line-height: 1.1; }
+    .brand-name { font-size: 13px; font-weight: 700; color: var(--text); letter-spacing: 0.03em; }
+    .brand-sub  { font-size: 10px; font-weight: 400; color: var(--text-muted); letter-spacing: 0.06em; text-transform: uppercase; }
+
+    .topbar-divider {
+      width: 1px; height: 28px; background: var(--border);
+      margin: 0 1.2rem;
+    }
+
+    .topbar-room-badge {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-lit);
+      border-radius: var(--radius-sm);
+      padding: 5px 12px;
+      font-size: 12px;
+    }
+    .topbar-room-badge .room-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--text-muted);
+    }
+    .topbar-room-badge .room-dot.active { background: var(--success-lit); box-shadow: 0 0 6px var(--success-lit); animation: pulse-dot 2s infinite; }
+    @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:.4} }
+    .topbar-room-badge span { color: var(--text-dim); }
+    .topbar-room-badge strong { color: var(--text); }
+
+    .topbar-teacher {
+      display: flex; align-items: center; gap: 8px;
+      margin-left: 1rem;
+    }
+    .topbar-teacher label { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+    #teacher-name-input {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-size: 13px;
+      padding: 5px 10px;
+      width: 150px;
+      font-family: inherit;
+      transition: border-color .2s;
+    }
+    #teacher-name-input:focus { outline: none; border-color: var(--accent-lit); }
+
+    .topbar-right {
+      margin-left: auto;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .topbar-badge {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 11px; color: var(--text-muted);
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 4px 10px;
+    }
+    .conn-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success-lit); }
+
+    /* ── LAYOUT ──────────────────────────────────────────── */
+    #dashboard { display: flex; flex: 1; flex-direction: column; overflow: hidden; }
     #main-content { flex: 1; display: flex; overflow: hidden; }
-    
+
+    /* ── LEFT PANEL ──────────────────────────────────────── */
     #sidebar {
-      width: 250px; background: #1e293b; border-right: 1px solid #334155;
-      padding: 1rem; display: flex; flex-direction: column; gap: 0.5rem;
+      width: 220px;
+      background: var(--bg-surface);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      padding: 1rem 0.75rem;
+      gap: 2px;
+      flex-shrink: 0;
+    }
+    .sidebar-section-label {
+      font-size: 10px; font-weight: 600; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: .08em;
+      padding: 0.5rem 0.5rem 0.25rem;
     }
     .sidebar-btn {
-      padding: 0.75rem; background: #334155; border: none; border-radius: 6px;
-      color: #fff; cursor: pointer; text-align: left; font-size: 0.9rem;
+      display: flex; align-items: center; gap: 10px;
+      padding: 0.6rem 0.75rem;
+      background: transparent;
+      border: none; border-radius: var(--radius-sm);
+      color: var(--text-dim);
+      cursor: pointer;
+      font-size: 13px; font-family: inherit; font-weight: 500;
+      text-align: left;
+      transition: background .15s, color .15s;
+      width: 100%;
     }
-    .sidebar-btn:hover { background: #475569; }
-    .sidebar-btn.active { background: #3b82f6; }
-    
-    #workspace { flex: 1; display: flex; flex-direction: column; padding: 1rem; }
-    
+    .sidebar-btn .sb-icon { font-size: 15px; width: 20px; text-align: center; }
+    .sidebar-btn:hover { background: var(--bg-card); color: var(--text); }
+    .sidebar-btn.active { background: rgba(0,0,0,.08); color: var(--text); border: 1px solid var(--border-lit); }
+
+    .sidebar-divider { height: 1px; background: var(--border); margin: 0.5rem 0; }
+
+    .sidebar-stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 0.75rem;
+      margin-top: auto;
+    }
+    .stat-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+    .stat-row:last-child { margin-bottom: 0; }
+    .stat-label { font-size: 11px; color: var(--text-muted); }
+    .stat-val { font-size: 13px; font-weight: 600; color: var(--text); }
+    .stat-val.green { color: var(--text); }
+    .stat-val.red   { color: var(--text); }
+
+    /* ── WORKSPACE ───────────────────────────────────────── */
+    #workspace {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-base);
+      position: relative;
+      overflow: hidden;
+    }
+
     #broadcast-area {
-      flex: 1; background: #0f172a; border-radius: 8px; display: flex;
-      align-items: center; justify-content: center; border: 2px dashed #334155;
+      flex: 1;
+      background: #0f172a;
+      display: flex; align-items: center; justify-content: center;
       position: relative; overflow: hidden;
+      border: 1px solid var(--border);
+      margin: 0.75rem;
+      border-radius: var(--radius);
     }
-    
-    #controls {
-      height: 70px; background: #1e293b; border-top: 1px solid #334155;
-      display: flex; align-items: center; justify-content: center; gap: 1rem; padding: 0 1rem;
-      flex-wrap: wrap; z-index: 5; position: relative;
+
+    .broadcast-placeholder {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 1rem; color: #64748b;
     }
-    .control-btn {
-      padding: 0.6rem 1.5rem; border-radius: 6px; border: none; cursor: pointer;
-      font-size: 0.95rem; font-weight: bold; display: inline-block; min-width: 120px;
+    .broadcast-placeholder .bp-icon {
+      width: 72px; height: 72px;
+      background: #1e293b;
+      border: 2px dashed #334155;
+      border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 32px;
     }
-    #create-room-btn { background: #3b82f6; color: #fff; }
-    #start-btn { background: #22c55e; color: #000; }
-    #stop-btn { background: #ef4444; color: #fff; display: none; }
-    #whiteboard-btn { background: #f59e0b; color: #000; }
-    #pointer-btn { background: #8b5cf6; color: #fff; }
-    
+    .broadcast-placeholder h3 { font-size: 15px; font-weight: 600; color: #94a3b8; }
+    .broadcast-placeholder p  { font-size: 12px; color: #64748b; text-align: center; }
+
+    #whiteboard-area {
+      display: none; flex: 1; background: #fff;
+      border-radius: var(--radius); margin: 0.75rem;
+      border: 1px solid var(--border);
+    }
+    #whiteboard { width: 100%; height: 100%; }
+
+    #teacher-pointer {
+      position: absolute; display: none;
+      width: 16px; height: 16px; border-radius: 50%;
+      background: rgba(239,68,68,.9);
+      box-shadow: 0 0 14px 6px rgba(239,68,68,.5);
+      pointer-events: none; z-index: 999;
+      transform: translate(-50%,-50%);
+    }
+
+    /* live badge on broadcast area */
+    #live-badge {
+      position: absolute; top: 14px; left: 14px;
+      display: none; align-items: center; gap: 6px;
+      background: rgba(0,0,0,.85);
+      border: 1px solid rgba(0,0,0,.4);
+      backdrop-filter: blur(4px);
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 11px; font-weight: 700; color: #fff;
+      letter-spacing: .06em; text-transform: uppercase;
+      z-index: 5;
+    }
+    #live-badge .live-dot { width: 6px; height: 6px; border-radius: 50%; background: #fff; animation: pulse-dot 1s infinite; }
+
+    /* ── CONTROLS BAR ────────────────────────────────────── */
+    #student-url-bar {
+    background: #fffbeb; border-top: 1px solid #fde68a;
+    padding: 6px 20px; font-size: 12px; color: #555;
+    display: flex; align-items: center; gap: 8px;
+  }
+  #controls {
+      height: 66px;
+      background: var(--bg-surface);
+      border-top: 1px solid var(--border);
+      display: flex; align-items: center;
+      padding: 0 1.25rem;
+      gap: 0.6rem;
+      flex-shrink: 0;
+      z-index: 5;
+    }
+
+    .ctrl-btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 0 18px; height: 38px;
+      border: 1px solid transparent;
+      border-radius: var(--radius-sm);
+      font-family: inherit; font-size: 13px; font-weight: 600;
+      cursor: pointer; white-space: nowrap;
+      transition: filter .15s, transform .1s, box-shadow .15s;
+      letter-spacing: .01em;
+    }
+    .ctrl-btn:active { transform: scale(.97); }
+    .ctrl-btn:disabled { opacity: .38; cursor: not-allowed; }
+
+    .ctrl-btn.blue,
+    .ctrl-btn.green,
+    .ctrl-btn.red,
+    .ctrl-btn.amber,
+    .ctrl-btn.purple,
+    .ctrl-btn.teal   { background: #111111; color: #ffffff; border-color: #111111; }
+    .ctrl-btn.blue:hover:not(:disabled),
+    .ctrl-btn.green:hover:not(:disabled),
+    .ctrl-btn.red:hover:not(:disabled),
+    .ctrl-btn.amber:hover:not(:disabled),
+    .ctrl-btn.purple:hover:not(:disabled),
+    .ctrl-btn.teal:hover:not(:disabled) { background: #333333; border-color: #333333; }
+
+    .ctrl-btn.teal.mic-live { background: #ffffff; color: #111111; border-color: #111111; border-width: 2px; }
+
+    .ctrl-sep { width: 1px; height: 28px; background: var(--border); margin: 0 0.25rem; flex-shrink: 0; }
+
+    /* ── RIGHT PANEL (Students) ──────────────────────────── */
     #student-panel {
-      width: 200px; background: #1e293b; border-left: 1px solid #334155;
-      padding: 1rem; display: flex; flex-direction: column;
+      width: 230px;
+      background: var(--bg-surface);
+      border-left: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      flex-shrink: 0;
     }
-    #student-panel h3 { font-size: 0.9rem; margin-bottom: 0.5rem; color: #94a3b8; }
-    
+
+    .panel-header {
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .panel-header h3 { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .07em; }
+    .panel-count-badge {
+      background: var(--accent);
+      color: #fff; font-size: 11px; font-weight: 700;
+      border-radius: 20px; padding: 1px 8px;
+    }
+
+    #student-list { flex: 1; overflow-y: auto; padding: 0.6rem; display: flex; flex-direction: column; gap: 4px; }
+    #student-list::-webkit-scrollbar { width: 4px; }
+    #student-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    .student-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 0.5rem 0.6rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      transition: border-color .15s;
+    }
+    .student-item .avatar {
+      width: 26px; height: 26px; border-radius: 50%;
+      background: #111111;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; color: #fff;
+      flex-shrink: 0;
+    }
+    .student-item .sname { flex: 1; color: var(--text); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .hand-raised { border-color: var(--warning-lit) !important; }
+    .hand-raised .avatar { background: #555555; }
+    .hand-tag {
+      font-size: 10px; background: #efefef; color: var(--text-dim);
+      border: 1px solid var(--border-lit); border-radius: 4px; padding: 1px 5px;
+    }
+
+    .empty-state {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      flex: 1; gap: 0.5rem; color: var(--text-muted); padding: 1rem;
+    }
+    .empty-state .es-icon { font-size: 28px; opacity: .4; }
+    .empty-state p { font-size: 11px; text-align: center; }
+
+    /* ── MODAL ───────────────────────────────────────────── */
     #classroom-modal {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 1000;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.55);
+      backdrop-filter: blur(6px);
+      display: none; align-items: center; justify-content: center;
+      z-index: 1000;
     }
     #classroom-modal-content {
-      background: #1e293b; padding: 2rem; border-radius: 12px; width: 400px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border-lit);
+      border-radius: 14px;
+      padding: 2rem;
+      width: 420px;
       display: flex; flex-direction: column; gap: 1rem;
+      box-shadow: 0 24px 60px rgba(0,0,0,.7);
     }
-    #classroom-modal-content h3 { color: #3b82f6; margin-bottom: 0.5rem; }
-    #classroom-modal-content input {
-      padding: 0.75rem; border-radius: 6px; border: 1px solid #334155;
-      background: #0f172a; color: #fff; font-size: 0.9rem;
+    .modal-header { display: flex; align-items: center; gap: 10px; margin-bottom: 0.25rem; }
+    .modal-icon {
+      width: 38px; height: 38px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
     }
-    #classroom-modal-content button {
-      padding: 0.75rem; background: #3b82f6; color: #fff; border: none;
-      border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: bold;
+    .modal-header h3 { font-size: 16px; font-weight: 700; color: var(--text); }
+    .modal-header p  { font-size: 12px; color: var(--text-muted); }
+
+    .input-group { display: flex; flex-direction: column; gap: 5px; }
+    .input-group label { font-size: 12px; font-weight: 500; color: var(--text-dim); }
+    .modal-input {
+      padding: 0.65rem 0.85rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--bg-base);
+      color: var(--text);
+      font-size: 13px;
+      font-family: inherit;
+      transition: border-color .2s;
     }
-    #classroom-modal-content button:hover { background: #2563eb; }
-    #student-list { flex: 1; overflow-y: auto; }
-    .student-item {
-      padding: 0.5rem; background: #334155; border-radius: 4px; margin-bottom: 0.25rem;
-      font-size: 0.85rem; display: flex; justify-content: space-between; align-items: center;
+    .modal-input:focus { outline: none; border-color: var(--accent-lit); box-shadow: 0 0 0 3px var(--accent-glow); }
+    .modal-input::placeholder { color: var(--text-muted); }
+
+    .modal-actions { display: flex; gap: 0.6rem; margin-top: 0.25rem; }
+    .modal-btn {
+      flex: 1; padding: 0.7rem;
+      border-radius: var(--radius-sm);
+      border: none; cursor: pointer;
+      font-family: inherit; font-size: 13px; font-weight: 600;
+      transition: filter .15s;
     }
-    .hand-raised { background: #f59e0b; color: #000; }
+    .modal-btn.primary { background: var(--accent); color: #fff; }
+    .modal-btn.primary:hover { filter: brightness(1.15); }
+    .modal-btn.secondary { background: var(--bg-card); color: var(--text-dim); border: 1px solid var(--border); }
+    .modal-btn.secondary:hover { background: #e2e8f0; }
+    #modal-error { font-size: 12px; color: var(--danger-lit); display: none; background: rgba(220,38,38,.1); border: 1px solid rgba(220,38,38,.3); border-radius: var(--radius-sm); padding: 0.5rem 0.75rem; }
+
+    /* ── End-Session modal danger colours ───────────────── */
+    .modal-btn.danger {
+      background: #dc2626; color: #fff; border-color: #dc2626;
+    }
+    .modal-btn.danger:hover { background: #b91c1c; }
+    .end-warn {
+      font-size: 12px; color: #dc2626;
+      background: rgba(220,38,38,.08); border: 1px solid rgba(220,38,38,.25);
+      border-radius: var(--radius-sm); padding: 0.55rem 0.75rem;
+      line-height: 1.5;
+    }
+
+    /* ── Connection Overlay ─────────────────── */
+    #conn-overlay {
+      position: fixed; inset: 0; z-index: 9999;
+      background: #fff;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 1rem; font-family: inherit;
+    }
+    #conn-overlay .co-logo { font-size: 3rem; }
+    #conn-overlay .co-title { font-size: 1.3rem; font-weight: 700; color: #111; }
+    #conn-overlay .co-msg   { font-size: 0.9rem; color: #555; text-align: center; max-width: 340px; }
+    #conn-overlay .co-url   { font-size: 0.8rem; color: #888; background: #f1f5f9; padding: 4px 12px; border-radius: 6px; }
+    #conn-overlay .co-spinner {
+      width: 36px; height: 36px;
+      border: 4px solid #e2e8f0;
+      border-top-color: #111;
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #conn-overlay .co-btn {
+      display: none; padding: 0.6rem 1.6rem;
+      background: #111; color: #fff;
+      border: none; border-radius: 8px;
+      font-size: 14px; font-weight: 600;
+      cursor: pointer;
+    }
+    #conn-overlay .co-btn:hover { background: #333; }
+
+    /* ── Session Recovery Banner ─────────────── */
+    #recovery-banner {
+      display: none;
+      position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+      background: #1a1a2e;
+      color: #fff;
+      padding: 10px 20px;
+      font-size: 13px;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 2px solid #4ade80;
+      animation: slideDown .4s ease;
+    }
+    @keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+    #recovery-banner .rb-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: #4ade80; flex-shrink: 0;
+      animation: pulse-dot 1.5s infinite;
+    }
+    #recovery-banner .rb-dismiss {
+      margin-left: auto; background: transparent;
+      border: 1px solid rgba(255,255,255,.4); border-radius: 6px;
+      color: #fff; font-size: 11px; padding: 3px 10px; cursor: pointer;
+    }
+    #recovery-banner .rb-dismiss:hover { background: rgba(255,255,255,.1); }
   </style>
 </head>
 <body>
 
-<!-- Dashboard -->
+<!-- Connection Overlay -->
+<div id="conn-overlay">
+  <div class="co-logo">🏫</div>
+  <div class="co-title">KGI Classroom</div>
+  <div class="co-spinner" id="co-spinner"></div>
+  <div class="co-msg" id="co-msg">Connecting to server...</div>
+  <div class="co-url" id="co-url"></div>
+  <button class="co-btn" id="co-retry" onclick="location.reload()">Retry</button>
+</div>
+
+<!-- Session Recovery Banner -->
+<div id="recovery-banner">
+  <div class="rb-dot"></div>
+  <span id="recovery-msg">Session restored successfully.</span>
+  <button class="rb-dismiss" onclick="document.getElementById('recovery-banner').style.display='none'">✕ Dismiss</button>
+</div>
+
 <div id="dashboard">
+
+  <!-- TOP BAR -->
   <div id="top-bar">
-    <h2>📚 Classroom Broadcast</h2>
-    <span style="color:#94a3b8;font-size:0.85rem;margin-left:1rem">👨‍🏫 Teacher:</span>
-    <input id="teacher-name-input" placeholder="Enter your name" style="padding:0.3rem 0.6rem;background:#0f172a;border:1px solid #334155;border-radius:6px;color:#fff;font-size:0.9rem;width:160px" />
-    <span style="margin-left:auto;color:#64748b;font-size:0.8rem">🔒 LAN Only</span>
-  </div>
-  
-  <div id="main-content">
-    <div id="sidebar">
-      <button class="sidebar-btn active" onclick="showSection('broadcast')">🎥 Broadcast</button>
-      <button class="sidebar-btn" onclick="showSection('whiteboard')">🎨 Whiteboard</button>
-      <button class="sidebar-btn" onclick="showSection('files')">📁 Files</button>
-      <button class="sidebar-btn" onclick="showSection('settings')">⚙️ Settings</button>
+    <div class="brand">
+      <div class="brand-logo">🏫</div>
+      <div class="brand-text">
+        <span class="brand-name">KGI Classroom</span>
+        <span class="brand-sub">Khali's Group of Industries</span>
+      </div>
     </div>
-    
-    <div id="workspace">
-      <div id="broadcast-area">
-        <div style="text-align:center;color:#94a3b8">
-          <div style="font-size:3rem;margin-bottom:1rem">🖥️</div>
-          <div>Click "Start Broadcast" to begin sharing</div>
+    <div class="topbar-divider"></div>
+    <div class="topbar-room-badge">
+      <div class="room-dot" id="room-status-dot"></div>
+      <span>Room:</span>
+      <strong id="room-code-display">—</strong>
+    </div>
+    <div class="topbar-teacher">
+      <label for="teacher-name-input">Instructor</label>
+      <input id="teacher-name-input" placeholder="Your name" autocomplete="off" />
+    </div>
+    <div class="topbar-right">
+      <div class="topbar-badge" id="conn-badge"><div class="conn-dot" id="conn-dot"></div> <span id="conn-label">Connecting...</span></div>
+    </div>
+  </div>
+
+  <div id="main-content">
+
+    <!-- LEFT SIDEBAR -->
+    <div id="sidebar">
+      <div class="sidebar-section-label">Navigation</div>
+      <button class="sidebar-btn active" onclick="showSection('broadcast')">
+        <span class="sb-icon">📡</span> Live Broadcast
+      </button>
+
+      <div class="sidebar-divider"></div>
+      <div class="sidebar-section-label">Session Info</div>
+
+      <div class="sidebar-stat-card">
+        <div class="stat-row">
+          <span class="stat-label">Students</span>
+          <span class="stat-val green" id="student-count">0</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Status</span>
+          <span class="stat-val" id="broadcast-status-text">Idle</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Mic</span>
+          <span class="stat-val" id="mic-status-text">Off</span>
         </div>
       </div>
-      
-      <div id="whiteboard-area" style="display:none;flex:1;background:#fff;border-radius:8px;">
-        <canvas id="whiteboard" style="width:100%;height:100%;"></canvas>
-      </div>
-      <!-- Teacher-side pointer overlay -->
-      <div id="teacher-pointer" style="position:absolute;display:none;width:18px;height:18px;border-radius:50%;background:rgba(255,0,0,0.9);box-shadow:0 0 14px 7px rgba(255,0,0,0.5);pointer-events:none;z-index:999;transform:translate(-50%,-50%);"></div>
     </div>
-    
+
+    <!-- WORKSPACE -->
+    <div id="workspace">
+      <div id="broadcast-area">
+        <div class="broadcast-placeholder" id="broadcast-placeholder">
+          <div class="bp-icon">🖥️</div>
+          <h3>No Active Broadcast</h3>
+          <p>Create a classroom, then click<br><strong>Start Broadcast</strong> to begin.</p>
+        </div>
+        <div id="live-badge"><div class="live-dot"></div> LIVE</div>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL: Students -->
     <div id="student-panel">
-      <h3>Students (<span id="student-count">0</span>)</h3>
-      <div id="student-list"></div>
+      <div class="panel-header">
+        <h3>Students</h3>
+        <span class="panel-count-badge" id="student-count-badge">0</span>
+      </div>
+      <div id="student-list">
+        <div class="empty-state" id="empty-students">
+          <div class="es-icon">👥</div>
+          <p>No students connected.<br>Share your room code.</p>
+        </div>
+      </div>
     </div>
   </div>
-  
+
+  <!-- CONTROLS BAR -->
   <div id="controls">
-    <button id="create-room-btn" onclick="showClassroomModal()" style="background:#3b82f6;color:#fff;padding:0.6rem 1.5rem;border-radius:6px;border:none;cursor:pointer;font-size:0.95rem;font-weight:bold;min-width:150px">🏠 Create Classroom</button>
-    <button id="start-btn" onclick="startBroadcast()" disabled style="background:#22c55e;color:#000;padding:0.6rem 1.5rem;border-radius:6px;border:none;cursor:pointer;font-size:0.95rem;font-weight:bold;min-width:140px;opacity:0.5;cursor:not-allowed">▶ Start Broadcast</button>
-    <button id="stop-btn" onclick="stopBroadcast()" style="background:#ef4444;color:#fff;padding:0.6rem 1.5rem;border-radius:6px;border:none;cursor:pointer;font-size:0.95rem;font-weight:bold;display:none">⏹ Stop Broadcast</button>
-    <button id="whiteboard-btn" onclick="toggleWhiteboard()" style="background:#f59e0b;color:#000;padding:0.6rem 1.5rem;border-radius:6px;border:none;cursor:pointer;font-size:0.95rem;font-weight:bold">🎨 Whiteboard</button>
-    <button id="pointer-btn" onclick="togglePointer()" style="background:#8b5cf6;color:#fff;padding:0.6rem 1.5rem;border-radius:6px;border:none;cursor:pointer;font-size:0.95rem;font-weight:bold">👆 Pointer</button>
-    <button id="mic-btn" onclick="toggleMic()" disabled style="background:#0891b2;color:#fff;padding:0.6rem 1.5rem;border-radius:6px;border:none;cursor:pointer;font-size:0.95rem;font-weight:bold;opacity:0.5">🎤 Mic: Off</button>
+    <button id="create-room-btn" class="ctrl-btn blue" onclick="showClassroomModal()">
+      <span>🏠</span> Create Classroom
+    </button>
+    <div class="ctrl-sep"></div>
+    <button id="start-btn" class="ctrl-btn green" onclick="startBroadcast()" disabled>
+      <span>▶</span> Start Broadcast
+    </button>
+    <button id="stop-btn" class="ctrl-btn red" onclick="stopBroadcast()" style="display:none">
+      <span>⏹</span> Stop Broadcast
+    </button>
+    <div class="ctrl-sep"></div>
+    <button id="mic-btn" class="ctrl-btn teal" onclick="toggleMic()" disabled>
+      <span>🎤</span> Mic: Muted
+    </button>
+    <div class="ctrl-sep"></div>
+    <button id="end-session-btn" class="ctrl-btn red" onclick="showEndSessionModal()" disabled>
+      <span>🚪</span> End Session
+    </button>
+    <button id="new-room-btn" class="ctrl-btn blue" onclick="newRoom()" style="display:none">
+      <span>➕</span> New Room
+    </button>
+  </div>
+  <!-- Student URL Bar -->
+  <div id="student-url-bar">
+    <span style="font-weight:600">📱 Student URL:</span>
+    <span id="student-url-text" style="font-family:monospace">Loading...</span>
+    <button onclick="copyStudentUrl()" style="margin-left:8px;padding:3px 10px;border:1px solid #ccc;border-radius:5px;cursor:pointer;font-size:12px;background:#f8f8f8">Copy</button>
   </div>
 </div>
 
-<!-- Classroom Creation Modal -->
+<!-- End Session Confirm Modal -->
+<div id="end-session-modal" style="position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;z-index:1000;">
+  <div style="background:var(--bg-panel);border:1px solid #dc2626;border-radius:14px;padding:2rem;width:400px;display:flex;flex-direction:column;gap:1rem;box-shadow:0 24px 60px rgba(220,38,38,.25);">
+    <div class="modal-header">
+      <div class="modal-icon" style="background:#fef2f2;border-color:#fecaca;">🚪</div>
+      <div>
+        <h3>End Session</h3>
+        <p>This will disconnect all students</p>
+      </div>
+    </div>
+    <div class="end-warn">
+      ⚠️ All connected students will be kicked out and the room will be permanently closed.
+      Their sessions will be cleared from their browsers too.
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn danger" onclick="endSession()">Yes, End Session</button>
+      <button class="modal-btn secondary" onclick="document.getElementById('end-session-modal').style.display='none'">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Create Classroom Modal -->
 <div id="classroom-modal">
   <div id="classroom-modal-content">
-    <h3>🏠 Create Classroom</h3>
-    <input id="room-code" placeholder="Room Code (e.g. MATH-101)" />
-    <input id="room-password" type="password" placeholder="Password (optional)" />
-    <button onclick="createClassroom()">Create Classroom</button>
-    <button onclick="hideClassroomModal()" style="background:#64748b">Cancel</button>
+    <div class="modal-header">
+      <div class="modal-icon">🏠</div>
+      <div>
+        <h3>Create Classroom</h3>
+        <p>Set up a new session for your students</p>
+      </div>
+    </div>
+    <div id="modal-error"></div>
+    <div class="input-group">
+      <label for="room-code">Room Code</label>
+      <input class="modal-input" id="room-code" placeholder="e.g. MATH-101" autocomplete="off" />
+    </div>
+    <div class="input-group">
+      <label for="room-password">Password <span style="color:var(--text-muted)">(optional)</span></label>
+      <input class="modal-input" id="room-password" type="password" placeholder="Leave empty for open room" />
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn primary" onclick="createClassroom()">Create Classroom</button>
+      <button class="modal-btn secondary" onclick="hideClassroomModal()">Cancel</button>
+    </div>
   </div>
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
+// ─── Session Persistence (localStorage) ─────────────────────────────────────
+const SESSION_KEY = 'kgi_teacher_session';
+
+function saveSession() {
+  if (!roomCode) return;
+  const session = {
+    roomCode,
+    teacherName,
+    savedAt: Date.now()
+  };
+  localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+}
+
+function loadSession() {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) return null;
+    const s = JSON.parse(raw);
+    // Expire sessions older than 24 hours
+    if (Date.now() - s.savedAt > 24 * 60 * 60 * 1000) {
+      localStorage.removeItem(SESSION_KEY);
+      return null;
+    }
+    return s;
+  } catch { return null; }
+}
+
+function clearSession() {
+  localStorage.removeItem(SESSION_KEY);
+}
+
+function showRecoveryBanner(msg) {
+  const banner = document.getElementById('recovery-banner');
+  document.getElementById('recovery-msg').textContent = msg;
+  banner.style.display = 'flex';
+  // Auto-hide after 6 seconds
+  setTimeout(() => { banner.style.display = 'none'; }, 6000);
+}
+
+// ─── App State ────────────────────────────────────────────────────────────────
 let socket = null;
 let isBroadcasting = false;
 let whiteboardActive = false;
@@ -157,48 +711,116 @@ let localStream = null;
 let micStream = null;
 let micEnabled = false;
 const peerConnections = new Map();
-const pendingCandidatesMap = new Map(); // buffer ICE candidates until answer is set
-const RTC_CONFIG = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+const pendingCandidatesMap = new Map();
+// ICE config comes from our own server (built-in LAN TURN relay), so WebRTC
+// works with no internet. Google STUN is useless offline and was removed.
+let RTC_CONFIG = { iceServers: [] };
+const iceConfigReady = fetch('/api/ice-config')
+  .then(r => r.json())
+  .then(cfg => { RTC_CONFIG = cfg; console.log('[WebRTC] ICE config', cfg); })
+  .catch(e => console.warn('[WebRTC] Could not load ICE config, using direct LAN only:', e));
+const peerRetries = new Map(); // studentId -> retry count
 
 // Read teacher name from input on change
 document.getElementById('teacher-name-input').addEventListener('input', (e) => {
   teacherName = e.target.value.trim() || 'Teacher';
+  saveSession(); // persist name changes immediately
 });
 
-// Auto-connect on page load
+// ─── Auto-connect on page load ───────────────────────────────────────────────
 window.addEventListener('load', () => {
-  socket = io({
-    transports: ['websocket'],
-    upgrade: false
+  socket = io(window.location.origin, {
+    transports: ['polling', 'websocket']
   });
-  
+
+  // Show server URL in overlay
+  document.getElementById('co-url').textContent = window.location.origin;
+
+  // Fetch LAN IP and display student URL
+  fetch('/api/health').then(r => r.json()).then(data => {
+    const sUrl = data.student_url || `http://${data.lan_ip}:3000/student`;
+    document.getElementById('student-url-text').textContent = sUrl;
+    document.getElementById('student-url-text').dataset.url = sUrl;
+  }).catch(() => {
+    document.getElementById('student-url-text').textContent = window.location.hostname + ':3000/student';
+  });
+
+  // ── Check for a saved session ─────────────────────────────────────────────
+  const savedSession = loadSession();
+
+  // Hide overlay once connected
   socket.on('connect', () => {
-    console.log('[Socket] Connected');
+    console.log('[Socket] Connected:', socket.id);
+    document.getElementById('conn-dot').style.background  = '#111111';
+    document.getElementById('conn-label').textContent = 'Connected';
+
+    if (savedSession) {
+      // ── Auto-restore: recreate the room automatically ─────────────────────
+      document.getElementById('co-msg').textContent = `Restoring session: Room ${savedSession.roomCode}...`;
+      teacherName = savedSession.teacherName;
+      document.getElementById('teacher-name-input').value = teacherName;
+      autoRecreateRoom(savedSession);
+    } else {
+      document.getElementById('conn-overlay').style.display = 'none';
+    }
   });
-  
-  socket.on('connect_error', (error) => {
-    console.error('[Socket] Connection error:', error);
+
+  socket.on('disconnect', () => {
+    document.getElementById('conn-dot').style.background  = '#ef4444';
+    document.getElementById('conn-label').textContent = 'Disconnected — reconnecting...';
   });
-  
+
+  socket.on('reconnect', () => {
+    document.getElementById('conn-dot').style.background  = '#111111';
+    document.getElementById('conn-label').textContent = 'Connected';
+    // Re-create room after socket reconnect
+    const s = loadSession();
+    if (s && !roomCode) autoRecreateRoom(s);
+  });
+
+  socket.on('connect_error', (err) => {
+    console.error('[Socket] connect_error:', err.message);
+    document.getElementById('co-spinner').style.display = 'none';
+    document.getElementById('co-msg').textContent = 'Cannot connect: ' + err.message;
+    document.getElementById('co-retry').style.display = 'inline-block';
+    document.getElementById('conn-dot').style.background  = '#ef4444';
+    document.getElementById('conn-label').textContent = 'Cannot connect';
+  });
+
+  // Show Retry button after 8 seconds if still not connected
+  setTimeout(() => {
+    if (!socket.connected) {
+      document.getElementById('co-spinner').style.display = 'none';
+      document.getElementById('co-msg').textContent = 'Server not responding. Make sure classroom-server.exe is running.';
+      document.getElementById('co-retry').style.display = 'inline-block';
+    }
+  }, 8000);
+
   socket.on('teacher:student-joined', ({ studentId, studentName, totalStudents }) => {
     addStudent(studentId, studentName);
     document.getElementById('student-count').textContent = totalStudents;
-    // If already broadcasting, send offer to new student
+    document.getElementById('student-count-badge').textContent = totalStudents;
     if (isBroadcasting && localStream) {
       createPeerForStudent(studentId, studentName);
     }
   });
-  
+
   socket.on('teacher:student-left', ({ studentId, studentName, totalStudents }) => {
     removeStudent(studentId);
     document.getElementById('student-count').textContent = totalStudents;
+    document.getElementById('student-count-badge').textContent = totalStudents;
     closePeer(studentId);
   });
-  
+
+  socket.on('room:student-list-updated', ({ students }) => {
+    // Full sync of student list (handles reconnect scenarios)
+    syncStudentList(students);
+  });
+
   socket.on('student:hand-raised', ({ studentId, studentName }) => {
     markHandRaised(studentId, true);
   });
-  
+
   socket.on('student:hand-lowered', ({ studentId }) => {
     markHandRaised(studentId, false);
   });
@@ -209,7 +831,6 @@ window.addEventListener('load', () => {
     if (!pc) return;
     await pc.setRemoteDescription(new RTCSessionDescription(answer)).catch(console.error);
     console.log('[WebRTC] Answer set for', fromSocketId);
-    // Flush any ICE candidates that arrived before the answer
     const buffered = pendingCandidatesMap.get(fromSocketId) || [];
     for (const c of buffered) {
       await pc.addIceCandidate(new RTCIceCandidate(c)).catch(console.error);
@@ -217,7 +838,7 @@ window.addEventListener('load', () => {
     pendingCandidatesMap.delete(fromSocketId);
   });
 
-  // Handle ICE candidates from students (buffer if answer not yet processed)
+  // Handle ICE candidates from students
   socket.on('webrtc:ice-candidate', ({ fromSocketId, candidate }) => {
     const pc = peerConnections.get(fromSocketId);
     if (!pc || !candidate) return;
@@ -230,8 +851,43 @@ window.addEventListener('load', () => {
   });
 });
 
+// ─── Auto-recreate room from saved session ────────────────────────────────────
+function autoRecreateRoom(session) {
+  socket.emit('teacher:create-room', {
+    roomCode: session.roomCode,
+    password: null,   // Password not stored for security; open rooms auto-recover
+    teacherName: session.teacherName,
+    sessionToken: 'no-auth'
+  }, (res) => {
+    if (res.success) {
+      roomCode = session.roomCode;
+      document.getElementById('conn-overlay').style.display = 'none';
+      document.getElementById('start-btn').disabled = false;
+      document.getElementById('create-room-btn').disabled = true;
+      document.getElementById('create-room-btn').innerHTML = `<span>✅</span> Room: ${roomCode}`;
+      document.getElementById('room-code-display').textContent = roomCode;
+      document.getElementById('room-status-dot').classList.add('active');
+      document.getElementById('end-session-btn').disabled = false;
+      saveSession();
+      showRecoveryBanner(`✅ Session restored — Room ${roomCode} is live again!`);
+    } else {
+      // Room may have a password — hide overlay and let teacher manually create
+      document.getElementById('conn-overlay').style.display = 'none';
+      showRecoveryBanner(`⚠️ Could not auto-restore Room ${session.roomCode}. Please create it again.`);
+      // Pre-fill the room code for convenience
+      document.getElementById('room-code').value = session.roomCode;
+    }
+  });
+}
+
 function showClassroomModal() {
   document.getElementById('classroom-modal').style.display = 'flex';
+}
+
+function copyStudentUrl() {
+  const url = document.getElementById('student-url-text').dataset.url
+    || document.getElementById('student-url-text').textContent;
+  navigator.clipboard.writeText(url).then(() => alert('Student URL copied: ' + url));
 }
 
 function hideClassroomModal() {
@@ -241,14 +897,17 @@ function hideClassroomModal() {
 function createClassroom() {
   const code = document.getElementById('room-code').value.trim().toUpperCase();
   const password = document.getElementById('room-password').value;
-  
+  const errEl = document.getElementById('modal-error');
+  errEl.style.display = 'none';
+
   if (!code) {
-    alert('Please enter a room code');
+    errEl.textContent = 'Please enter a room code.';
+    errEl.style.display = 'block';
     return;
   }
-  
+
   roomCode = code;
-  
+
   socket.emit('teacher:create-room', {
     roomCode: code,
     password: password || null,
@@ -258,34 +917,69 @@ function createClassroom() {
     if (res.success) {
       hideClassroomModal();
       document.getElementById('start-btn').disabled = false;
-      document.getElementById('start-btn').style.opacity = '1';
-      document.getElementById('start-btn').style.cursor = 'pointer';
-      document.getElementById('create-room-btn').textContent = `🏠 Room: ${code}`;
       document.getElementById('create-room-btn').disabled = true;
-      alert(`Classroom "${code}" created successfully!`);
+      document.getElementById('create-room-btn').innerHTML = `<span>✅</span> Room: ${code}`;
+      document.getElementById('room-code-display').textContent = code;
+      document.getElementById('room-status-dot').classList.add('active');
+      document.getElementById('end-session-btn').disabled = false;
+      saveSession(); // ← persist session to localStorage
     } else {
-      alert('Error creating classroom: ' + res.error);
+      errEl.textContent = 'Error: ' + res.error;
+      errEl.style.display = 'block';
     }
   });
 }
 
-function addStudent(id, name) {
+// Sync student list from server (used after reconnect)
+function syncStudentList(students) {
+  // Clear existing list
   const list = document.getElementById('student-list');
+  list.querySelectorAll('.student-item').forEach(el => el.remove());
+  students.forEach(s => addStudent(s.socketId, s.name));
+  const count = students.length;
+  document.getElementById('student-count').textContent = count;
+  document.getElementById('student-count-badge').textContent = count;
+  _refreshEmptyStudents();
+}
+
+function addStudent(id, name) {
+  document.getElementById('empty-students').style.display = 'none';
+  const list = document.getElementById('student-list');
+  const initial = (name || '?')[0].toUpperCase();
   const div = document.createElement('div');
   div.className = 'student-item';
   div.id = 'student-' + id;
-  div.innerHTML = `<span>${name}</span>`;
+  div.innerHTML = `<div class="avatar">${initial}</div><span class="sname">${name}</span>`;
   list.appendChild(div);
+  const count = document.querySelectorAll('.student-item').length;
+  document.getElementById('student-count-badge').textContent = count;
+}
+
+function _refreshEmptyStudents() {
+  const hasStudents = document.querySelectorAll('.student-item').length > 0;
+  document.getElementById('empty-students').style.display = hasStudents ? 'none' : 'flex';
+  document.getElementById('student-count-badge').textContent = hasStudents ? document.querySelectorAll('.student-item').length : 0;
 }
 
 function removeStudent(id) {
   const el = document.getElementById('student-' + id);
   if (el) el.remove();
+  _refreshEmptyStudents();
 }
 
 function markHandRaised(id, raised) {
   const el = document.getElementById('student-' + id);
-  if (el) el.classList.toggle('hand-raised', raised);
+  if (!el) return;
+  el.classList.toggle('hand-raised', raised);
+  const tag = el.querySelector('.hand-tag');
+  if (raised && !tag) {
+    const span = document.createElement('span');
+    span.className = 'hand-tag';
+    span.textContent = '✋';
+    el.appendChild(span);
+  } else if (!raised && tag) {
+    tag.remove();
+  }
 }
 
 async function startBroadcast() {
@@ -304,25 +998,29 @@ async function startBroadcast() {
 
     isBroadcasting = true;
     document.getElementById('start-btn').style.display = 'none';
-    document.getElementById('stop-btn').style.display = 'inline-block';
+    document.getElementById('stop-btn').style.display = 'inline-flex';
+    document.getElementById('broadcast-status-text').textContent = 'Live';
+    document.getElementById('broadcast-status-text').style.color = 'var(--success-lit)';
+    document.getElementById('live-badge').style.display = 'flex';
 
     const micBtn = document.getElementById('mic-btn');
     if (micStream) {
       micBtn.disabled = false;
-      micBtn.style.opacity = '1';
-      micBtn.style.cursor = 'pointer';
-      micBtn.textContent = '🎤 Mic: Muted';
+      micBtn.innerHTML = '<span>🎤</span> Mic: Muted';
+      document.getElementById('mic-status-text').textContent = 'Muted';
     } else {
-      micBtn.textContent = '🎤 No Mic';
+      micBtn.innerHTML = '<span>🎤</span> No Mic';
+      document.getElementById('mic-status-text').textContent = 'N/A';
     }
 
     const video = document.createElement('video');
     video.srcObject = localStream;
     video.autoplay = true;
     video.muted = true;
-    video.style.cssText = 'width:100%;height:100%;object-fit:contain;';
-    document.getElementById('broadcast-area').innerHTML = '';
-    document.getElementById('broadcast-area').appendChild(video);
+    video.style.cssText = 'width:100%;height:100%;object-fit:contain;border-radius:10px;';
+    const area = document.getElementById('broadcast-area');
+    document.getElementById('broadcast-placeholder').style.display = 'none';
+    area.appendChild(video);
 
     socket.emit('teacher:start-broadcast', {}, (res) => {
       if (res && res.students) {
@@ -338,21 +1036,27 @@ async function startBroadcast() {
 }
 
 function toggleMic() {
-  if (!micStream) { alert('No microphone available'); return; }
+  if (!micStream) { return; }
   const btn = document.getElementById('mic-btn');
   micEnabled = !micEnabled;
   micStream.getAudioTracks().forEach(t => { t.enabled = micEnabled; });
-  btn.textContent = micEnabled ? '🔴 Mic: ON' : '🎤 Mic: Muted';
-  btn.style.background  = micEnabled ? '#dc2626' : '#0891b2';
+  btn.innerHTML = micEnabled ? '<span>🔴</span> Mic: ON' : '<span>🎤</span> Mic: Muted';
+  btn.classList.toggle('mic-live', micEnabled);
+  document.getElementById('mic-status-text').textContent = micEnabled ? 'Live' : 'Muted';
+  document.getElementById('mic-status-text').style.color = micEnabled ? 'var(--danger-lit)' : '';
 }
 
 async function handleStudentOffer(studentId, offer) {
+  await iceConfigReady;
   const pc = new RTCPeerConnection(RTC_CONFIG);
   peerConnections.set(studentId, pc);
 
   // Add all local stream tracks to peer connection
   if (localStream) {
     localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+  }
+  if (micStream && localStream) {
+    micStream.getAudioTracks().forEach(track => pc.addTrack(track, localStream));
   }
 
   pc.onicecandidate = (e) => {
@@ -375,8 +1079,33 @@ async function handleStudentOffer(studentId, offer) {
 }
 
 async function createPeerForStudent(studentId, studentName) {
+  await iceConfigReady;
+  // Replace any old connection to this student
+  const old = peerConnections.get(studentId);
+  if (old) { old.onconnectionstatechange = null; old.close(); }
+  pendingCandidatesMap.delete(studentId);
+
   const pc = new RTCPeerConnection(RTC_CONFIG);
   peerConnections.set(studentId, pc);
+
+  // Auto-retry if the connection fails (e.g. Wi-Fi hiccup)
+  pc.onconnectionstatechange = () => {
+    console.log('[WebRTC]', studentName || studentId, '→', pc.connectionState);
+    if (pc.connectionState === 'connected') {
+      peerRetries.delete(studentId);
+    } else if (pc.connectionState === 'failed' && isBroadcasting && peerConnections.get(studentId) === pc) {
+      const n = (peerRetries.get(studentId) || 0) + 1;
+      peerRetries.set(studentId, n);
+      if (n <= 5) {
+        console.warn(`[WebRTC] Connection to ${studentName || studentId} failed — retry ${n}/5`);
+        setTimeout(() => {
+          if (isBroadcasting && peerConnections.get(studentId) === pc) createPeerForStudent(studentId, studentName);
+        }, 1500 * n);
+      } else {
+        console.error(`[WebRTC] Giving up on ${studentName || studentId}. Check firewall for UDP 3478 / 49160-49400.`);
+      }
+    }
+  };
 
   if (localStream) {
     localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
@@ -407,8 +1136,9 @@ async function createPeerForStudent(studentId, studentName) {
 
 function closePeer(studentId) {
   const pc = peerConnections.get(studentId);
-  if (pc) { pc.close(); peerConnections.delete(studentId); }
+  if (pc) { pc.onconnectionstatechange = null; pc.close(); peerConnections.delete(studentId); }
   pendingCandidatesMap.delete(studentId);
+  peerRetries.delete(studentId);
 }
 
 function stopBroadcast() {
@@ -426,77 +1156,106 @@ function stopBroadcast() {
   }
   micEnabled = false;
   const micBtn = document.getElementById('mic-btn');
-  micBtn.textContent = '🎤 Mic: Off';
-  micBtn.style.background = '#0891b2';
+  micBtn.innerHTML = '<span>🎤</span> Mic: Muted';
+  micBtn.classList.remove('mic-live');
   micBtn.disabled = true;
-  micBtn.style.opacity = '0.5';
-  micBtn.style.cursor = 'not-allowed';
+  document.getElementById('mic-status-text').textContent = 'Off';
 
-  peerConnections.forEach((pc) => pc.close());
+  peerConnections.forEach((pc) => { pc.onconnectionstatechange = null; pc.close(); });
   peerConnections.clear();
+  peerRetries.clear();
 
-  document.getElementById('start-btn').style.display = 'inline-block';
+  document.getElementById('start-btn').style.display = 'inline-flex';
   document.getElementById('stop-btn').style.display = 'none';
+  document.getElementById('broadcast-status-text').textContent = 'Idle';
+  document.getElementById('broadcast-status-text').style.color = '';
+  document.getElementById('live-badge').style.display = 'none';
 
-  document.getElementById('broadcast-area').innerHTML = `
-    <div style="text-align:center;color:#94a3b8">
-      <div style="font-size:3rem;margin-bottom:1rem">🖥️</div>
-      <div>Click "Start Broadcast" to begin sharing</div>
-    </div>
-  `;
+  const area = document.getElementById('broadcast-area');
+  const oldVideo = area.querySelector('video');
+  if (oldVideo) oldVideo.remove();
+  document.getElementById('broadcast-placeholder').style.display = 'flex';
 
   socket.emit('teacher:stop-broadcast');
 }
 
-function toggleWhiteboard() {
-  whiteboardActive = !whiteboardActive;
-  document.getElementById('whiteboard-area').style.display = whiteboardActive ? 'block' : 'none';
-  document.getElementById('broadcast-area').style.display = whiteboardActive ? 'none' : 'flex';
-  document.getElementById('whiteboard-btn').style.background = whiteboardActive ? '#dc2626' : '#f59e0b';
+// ─── End Session ─────────────────────────────────────────────────────────────
+function showEndSessionModal() {
+  document.getElementById('end-session-modal').style.display = 'flex';
 }
 
-let _pointerThrottle = null;
+function endSession() {
+  document.getElementById('end-session-modal').style.display = 'none';
 
-function togglePointer() {
-  pointerActive = !pointerActive;
-  const btn = document.getElementById('pointer-btn');
-  const dot = document.getElementById('teacher-pointer');
-  btn.style.background = pointerActive ? '#dc2626' : '#8b5cf6';
-  btn.textContent = pointerActive ? '🔴 Pointer ON' : '👆 Pointer';
+  // Stop broadcast if active
+  if (isBroadcasting) stopBroadcast();
 
-  if (pointerActive) {
-    const area = document.getElementById('broadcast-area');
-    area.addEventListener('mousemove', handlePointerMove);
-    dot.style.display = 'block';
-  } else {
-    document.getElementById('broadcast-area').removeEventListener('mousemove', handlePointerMove);
-    dot.style.display = 'none';
-    socket.emit('pointer:hide');
+  // Tell server to close room PERMANENTLY (deliberate — not a reconnect)
+  if (socket && roomCode) {
+    socket.emit('teacher:end-room', { roomCode });
   }
+
+  // Clear saved session so students don't auto-rejoin
+  clearSession();
+
+  // Reset all UI back to initial state
+  roomCode = null;
+
+  document.getElementById('create-room-btn').disabled = false;
+  document.getElementById('create-room-btn').innerHTML = '<span>🏠</span> Create Classroom';
+  document.getElementById('room-code-display').textContent = '—';
+  document.getElementById('room-status-dot').classList.remove('active');
+  document.getElementById('start-btn').disabled = true;
+  document.getElementById('start-btn').style.display = 'inline-flex';
+  document.getElementById('stop-btn').style.display = 'none';
+  document.getElementById('end-session-btn').disabled = true;
+  document.getElementById('new-room-btn').style.display = 'none';
+  document.getElementById('student-count').textContent = '0';
+  document.getElementById('student-count-badge').textContent = '0';
+  document.getElementById('broadcast-status-text').textContent = 'Idle';
+  document.getElementById('broadcast-status-text').style.color = '';
+  document.getElementById('mic-status-text').textContent = 'Off';
+
+  // Clear student list
+  const list = document.getElementById('student-list');
+  list.querySelectorAll('.student-item').forEach(el => el.remove());
+  document.getElementById('empty-students').style.display = 'flex';
+
+  // Pre-fill room code field for quick new session
+  document.getElementById('room-code').value = '';
+  document.getElementById('room-password').value = '';
 }
 
-function handlePointerMove(e) {
-  const area = document.getElementById('broadcast-area');
-  const rect = area.getBoundingClientRect();
-  const x = (e.clientX - rect.left) / rect.width;
-  const y = (e.clientY - rect.top) / rect.height;
+// ─── New Room (reset without ending session — just opens the create modal) ────
+function newRoom() {
+  // If broadcast is active, stop it first
+  if (isBroadcasting) stopBroadcast();
+  clearSession();
+  roomCode = null;
 
-  // Move teacher-side dot
-  const dot = document.getElementById('teacher-pointer');
-  dot.style.left = `${(e.clientX - rect.left)}px`;
-  dot.style.top  = `${(e.clientY - rect.top)}px`;
+  // Reset UI
+  document.getElementById('create-room-btn').disabled = false;
+  document.getElementById('create-room-btn').innerHTML = '<span>🏠</span> Create Classroom';
+  document.getElementById('room-code-display').textContent = '—';
+  document.getElementById('room-status-dot').classList.remove('active');
+  document.getElementById('start-btn').disabled = true;
+  document.getElementById('end-session-btn').disabled = true;
+  document.getElementById('new-room-btn').style.display = 'none';
 
-  // Throttle socket emit to ~30fps
-  if (_pointerThrottle) return;
-  _pointerThrottle = setTimeout(() => { _pointerThrottle = null; }, 33);
-  socket.emit('pointer:move', { x, y, mode: 'laser' });
+  const list = document.getElementById('student-list');
+  list.querySelectorAll('.student-item').forEach(el => el.remove());
+  document.getElementById('empty-students').style.display = 'flex';
+  document.getElementById('student-count').textContent = '0';
+  document.getElementById('student-count-badge').textContent = '0';
+
+  // Open the create classroom modal
+  showClassroomModal();
 }
 
 function showSection(section) {
   document.querySelectorAll('.sidebar-btn').forEach(btn => btn.classList.remove('active'));
   event.target.classList.add('active');
   document.getElementById('broadcast-area').style.display = section === 'broadcast' ? 'flex' : 'none';
-  document.getElementById('whiteboard-area').style.display = section === 'whiteboard' ? 'block' : 'none';
 }
 </script>
 </body>

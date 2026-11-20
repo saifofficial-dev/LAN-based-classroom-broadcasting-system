@@ -7,3 +7,11 @@ uploads/
 *.crt
 .env
 npm-debug.log*
+
+# Build output & runtime state
+dist/
+*.exe
+rooms-snapshot.json
+*.lnk
+logs/
+*.log

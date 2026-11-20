@@ -1,201 +1,637 @@
-<!-- student-app/public/index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Classroom Viewer</title>
+  <title>KGI Classroom Portal — Student</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: #0a0a0f; color: #fff; font-family: 'Segoe UI', sans-serif; height: 100vh; display: flex; flex-direction: column; }
+    :root {
+      --bg-base:    #f5f5f5;
+      --bg-surface: #ffffff;
+      --bg-panel:   #fafafa;
+      --bg-card:    #efefef;
+      --border:     #d4d4d4;
+      --border-lit: #a3a3a3;
+      --accent:     #111111;
+      --accent-lit: #333333;
+      --accent-glow: rgba(0,0,0,0.08);
+      --success:    #111111;
+      --success-lit:#333333;
+      --danger:     #111111;
+      --danger-lit: #333333;
+      --warning:    #555555;
+      --warning-lit:#777777;
+      --text:       #0a0a0a;
+      --text-muted: #737373;
+      --text-dim:   #404040;
+      --radius:     10px;
+      --radius-sm:  6px;
+    }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg-base); color: var(--text);
+      font-family: 'Inter', 'Segoe UI', sans-serif;
+      height: 100vh;
+      height: 100dvh; /* mobile: visible area only, so the bottom bar isn't hidden under the browser toolbar */
+      display: flex; flex-direction: column;
+      overflow: hidden; font-size: 14px;
+    }
 
-    /* ── Step 1: Connect ── */
+    /* ── CONNECT SCREEN ──────────────────────────────── */
     #connect-screen {
       display: flex; flex-direction: column; align-items: center;
-      justify-content: center; height: 100vh; gap: 1rem;
+      justify-content: center; height: 100vh; gap: 0;
+      background: var(--bg-base);
     }
-    #connect-screen h1 { font-size: 2rem; color: #4f9eff; }
-    #connect-screen input {
-      padding: 0.75rem 1rem; width: 300px; border-radius: 8px;
-      border: 1px solid #333; background: #1a1a2e; color: #fff; font-size: 1rem;
+    .connect-logo {
+      width: 64px; height: 64px;
+      background: #111111;
+      border-radius: 18px; display: flex; align-items: center;
+      justify-content: center; font-size: 32px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+      margin-bottom: 1.5rem;
     }
+    .connect-brand { font-size: 22px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+    .connect-sub   { font-size: 12px; color: var(--text-muted); letter-spacing: .08em; text-transform: uppercase; margin-bottom: 2.5rem; }
+    .connect-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 16px; padding: 2rem;
+      width: 360px; display: flex; flex-direction: column; gap: 1rem;
+      box-shadow: 0 4px 24px rgba(0,0,0,.1);
+    }
+    .connect-card h2 { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 0.25rem; }
+    .connect-card p  { font-size: 12px; color: var(--text-muted); }
+    .field-group { display: flex; flex-direction: column; gap: 5px; }
+    .field-label { font-size: 12px; font-weight: 500; color: var(--text-dim); }
+    .field-input {
+      padding: 0.65rem 0.85rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--bg-base); color: var(--text);
+      font-size: 13px; font-family: inherit;
+      transition: border-color .2s;
+    }
+    .field-input:focus { outline: none; border-color: var(--accent-lit); box-shadow: 0 0 0 3px var(--accent-glow); }
+    .field-input::placeholder { color: var(--text-muted); }
     #connect-btn {
-      padding: 0.75rem 2rem; background: #4f9eff; color: #fff;
-      border: none; border-radius: 8px; font-size: 1rem; cursor: pointer; width: 300px;
+      padding: 0.7rem; background: var(--accent); color: #fff;
+      border: none; border-radius: var(--radius-sm);
+      font-family: inherit; font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: filter .15s;
+      margin-top: 0.25rem;
     }
-    #connect-btn:hover { background: #2d7ddd; }
+    #connect-btn:hover { filter: brightness(1.15); }
+    #connect-error { font-size: 12px; color: var(--danger-lit); display: none; }
 
-    /* ── Step 2: Browse Rooms ── */
+    /* ── BROWSE SCREEN ───────────────────────────────── */
     #browse-screen {
-      display: none; flex-direction: column; align-items: center;
-      min-height: 100vh; padding: 2rem 1rem; gap: 1.5rem;
+      display: none; flex-direction: column; height: 100vh;
+      background: var(--bg-base);
     }
-    #browse-screen h2 { font-size: 1.6rem; color: #4f9eff; }
+    .browse-topbar {
+      height: 56px; background: var(--bg-surface);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; padding: 0 1.5rem; gap: 1rem;
+      flex-shrink: 0;
+    }
+    .browse-brand { display: flex; align-items: center; gap: 10px; }
+    .browse-brand-logo {
+      width: 30px; height: 30px;
+      background: #111111;
+      border-radius: 7px; display: flex; align-items: center;
+      justify-content: center; font-size: 15px;
+    }
+    .browse-brand-text { font-size: 13px; font-weight: 700; color: var(--text); }
+    .browse-brand-sub  { font-size: 10px; color: var(--text-muted); }
+    .browse-divider { width: 1px; height: 24px; background: var(--border); }
+    .browse-title { font-size: 14px; font-weight: 600; color: var(--text); }
+    .browse-student-tag {
+      margin-left: auto;
+      display: flex; align-items: center; gap: 7px;
+      background: var(--bg-card); border: 1px solid var(--border-lit);
+      border-radius: var(--radius-sm); padding: 4px 12px; font-size: 12px;
+    }
+    .browse-student-tag .av {
+      width: 22px; height: 22px; border-radius: 50%;
+      background: #111111; color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700;
+    }
+    #back-btn {
+      padding: 5px 14px; background: transparent;
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      color: var(--text-dim); font-family: inherit; font-size: 12px; cursor: pointer;
+    }
+    #back-btn:hover { border-color: var(--border-lit); color: var(--text); }
+    #refresh-btn {
+      padding: 5px 14px; background: var(--bg-card);
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      color: var(--text-dim); font-family: inherit; font-size: 12px; cursor: pointer;
+    }
+    #refresh-btn:hover { background: var(--border); color: var(--text); }
+
+    .browse-body { flex: 1; overflow-y: auto; padding: 1.5rem; }
+    .browse-body::-webkit-scrollbar { width: 4px; }
+    .browse-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    .browse-section-hdr {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+    .browse-section-hdr h3 { font-size: 13px; font-weight: 600; color: var(--text-dim); }
+    .browse-section-hdr span { font-size: 11px; color: var(--text-muted); }
+
     #rooms-grid {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-      gap: 1rem; width: 100%; max-width: 900px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 0.85rem;
     }
     .room-card {
-      background: #1a1a2e; border: 2px solid #2d3748; border-radius: 14px;
-      padding: 1.4rem 1.2rem; cursor: pointer; transition: all 0.2s;
-      display: flex; flex-direction: column; gap: 0.5rem;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.1rem 1.1rem;
+      cursor: pointer;
+      transition: border-color .18s, transform .18s, box-shadow .18s;
+      display: flex; flex-direction: column; gap: 0.6rem;
     }
-    .room-card:hover { border-color: #4f9eff; background: #1e2a45; transform: translateY(-2px); box-shadow: 0 6px 24px rgba(79,158,255,0.15); }
-    .room-card .rc-teacher { font-size: 1.1rem; font-weight: bold; color: #fff; }
-    .room-card .rc-code { font-size: 0.85rem; color: #4f9eff; font-family: monospace; }
-    .room-card .rc-meta { display: flex; gap: 1rem; font-size: 0.8rem; color: #9ca3af; margin-top: 0.3rem; }
-    .room-card .rc-live { display: inline-flex; align-items: center; gap: 5px; font-size: 0.75rem; font-weight: bold; color: #22c55e; }
-    .room-card .rc-live::before { content:''; width:8px; height:8px; border-radius:50%; background:#22c55e; animation: pulse 1.5s infinite; }
-    .room-card .rc-locked { color: #f59e0b; font-size: 0.8rem; }
-    #no-rooms {
-      color: #6b7280; text-align: center; padding: 3rem;
-      border: 2px dashed #2d3748; border-radius: 14px; width: 100%; max-width: 500px;
+    .room-card:hover {
+      border-color: var(--border-lit);
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(0,0,0,.1);
     }
-    #refresh-btn {
-      padding: 0.5rem 1.5rem; background: #2d3748; border: none; border-radius: 8px;
-      color: #9ca3af; cursor: pointer; font-size: 0.9rem;
+    .rc-header { display: flex; align-items: flex-start; justify-content: space-between; }
+    .rc-avatar {
+      width: 38px; height: 38px; border-radius: 10px;
+      background: #111111;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; font-weight: 700; color: #fff;
+      flex-shrink: 0;
     }
-    #refresh-btn:hover { background: #374151; color: #fff; }
-    #back-btn {
-      padding: 0.4rem 1rem; background: transparent; border: 1px solid #374151;
-      border-radius: 8px; color: #9ca3af; cursor: pointer; font-size: 0.85rem;
+    .rc-live {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 10px; font-weight: 700;
+      color: #ffffff;
+      background: #111111;
+      border: 1px solid #111111;
+      border-radius: 20px; padding: 3px 9px;
     }
+    .rc-live::before { content:''; width:6px; height:6px; border-radius:50%; background: #ffffff; animation: pulse-dot 1.5s infinite; }
+    @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:.3} }
+    .rc-teacher { font-size: 14px; font-weight: 600; color: var(--text); margin-top: 0.5rem; }
+    .rc-code { font-size: 11px; color: var(--text-muted); font-family: monospace; letter-spacing: .05em; font-weight: 600; }
+    .rc-footer { display: flex; align-items: center; gap: 0.75rem; margin-top: 0.2rem; }
+    .rc-badge {
+      font-size: 10px; color: var(--text-muted);
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 4px; padding: 2px 7px;
+    }
+    .rc-locked { font-size: 11px; color: var(--warning-lit); }
 
-    /* ── Password modal ── */
+    #no-rooms {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 0.75rem;
+      padding: 4rem 2rem; color: var(--text-muted);
+      border: 2px dashed var(--border); border-radius: var(--radius);
+    }
+    #no-rooms .nr-icon { font-size: 3rem; opacity: .3; }
+    #no-rooms h3 { font-size: 14px; color: var(--text-dim); }
+    #no-rooms p  { font-size: 12px; text-align: center; }
+    #browse-error { font-size: 12px; color: var(--danger-lit); display: none; margin-top: 0.5rem; }
+
+    /* ── PASSWORD MODAL ──────────────────────────────── */
     #pw-modal {
-      position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.5); backdrop-filter: blur(6px);
       display: none; align-items: center; justify-content: center; z-index: 2000;
     }
     #pw-box {
-      background: #1e293b; border-radius: 14px; padding: 2rem; width: 320px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 14px; padding: 2rem; width: 360px;
       display: flex; flex-direction: column; gap: 1rem;
+      box-shadow: 0 4px 24px rgba(0,0,0,.12);
     }
-    #pw-box h3 { color: #fff; }
+    .pw-hdr { display: flex; align-items: center; gap: 10px; }
+    .pw-icon { font-size: 22px; }
+    .pw-hdr h3 { font-size: 15px; font-weight: 700; color: var(--text); }
+    .pw-hdr p  { font-size: 12px; color: var(--text-muted); }
     #pw-input {
-      padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid #334155;
-      background: #0f172a; color: #fff; font-size: 1rem; width: 100%;
+      padding: 0.65rem 0.85rem; border-radius: var(--radius-sm);
+      border: 1px solid var(--border); background: var(--bg-base);
+      color: var(--text); font-size: 13px; font-family: inherit; width: 100%;
     }
-    #pw-ok { padding: 0.75rem; background: #4f9eff; border: none; border-radius: 8px; color: #fff; cursor: pointer; font-size: 1rem; }
-    #pw-cancel { padding: 0.5rem; background: transparent; border: none; color: #6b7280; cursor: pointer; font-size: 0.9rem; }
+    #pw-input:focus { outline: none; border-color: var(--accent-lit); }
+    #pw-error { font-size: 12px; color: var(--danger-lit); display: none; }
+    .pw-actions { display: flex; gap: 0.6rem; }
+    #pw-ok {
+      flex: 1; padding: 0.7rem; background: var(--accent); color: #fff;
+      border: none; border-radius: var(--radius-sm);
+      font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+    }
+    #pw-ok:hover { filter: brightness(1.12); }
+    #pw-cancel {
+      padding: 0.7rem 1rem; background: var(--bg-card);
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      color: var(--text-dim); font-family: inherit; font-size: 13px; cursor: pointer;
+    }
 
-    #classroom-view { display: none; flex: 1; flex-direction: column; }
+    /* ── CLASSROOM VIEW ──────────────────────────────── */
+    #classroom-view { display: none; flex: 1; flex-direction: column; min-height: 0; }
 
     #top-bar {
-      height: 44px; background: #111827; display: flex;
-      align-items: center; padding: 0 1rem; gap: 1rem; border-bottom: 1px solid #1f2937;
+      height: 52px; background: var(--bg-surface);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; padding: 0 1.25rem; gap: 1rem;
+      flex-shrink: 0;
     }
-    #status-dot { width: 10px; height: 10px; border-radius: 50%; background: #ef4444; }
-    #status-dot.live { background: #22c55e; animation: pulse 1.5s infinite; }
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+    .topbar-brand { display: flex; align-items: center; gap: 8px; }
+    .topbar-brand-logo {
+      width: 28px; height: 28px;
+      background: #111111;
+      border-radius: 7px; display: flex; align-items: center;
+      justify-content: center; font-size: 14px;
+    }
+    .topbar-brand-name { font-size: 12px; font-weight: 700; }
+    .topbar-brand-sub  { font-size: 10px; color: var(--text-muted); }
+    .tb-divider { width: 1px; height: 24px; background: var(--border); }
+    .status-pill {
+      display: flex; align-items: center; gap: 7px;
+      background: var(--bg-card); border: 1px solid var(--border-lit);
+      border-radius: 20px; padding: 5px 13px; font-size: 12px;
+    }
+    #status-dot {
+      width: 8px; height: 8px; border-radius: 50%; background: #a3a3a3;
+      transition: background .3s;
+    }
+    #status-dot.live { background: #111111; box-shadow: none; animation: pulse-dot 1.5s infinite; }
+    #status-text { font-weight: 500; color: var(--text-dim); }
+    .tb-room-label {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 4px 10px;
+      font-size: 11px; color: var(--text-muted);
+    }
+    .tb-room-label strong { color: var(--text); font-weight: 700; }
+    .tb-right { margin-left: auto; display: flex; align-items: center; gap: 0.6rem; }
+    .tb-student-name {
+      font-size: 12px; color: var(--text-dim);
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 4px 10px;
+    }
+    .leave-btn {
+      padding: 5px 14px; background: #dc2626; color: #fff;
+      border: 1px solid #dc2626; border-radius: var(--radius-sm);
+      font-family: inherit; font-size: 12px; cursor: pointer;
+      font-weight: 600; transition: background .15s, border-color .15s;
+    }
+    .leave-btn:hover { background: #b91c1c; border-color: #b91c1c; }
 
-    #main-area { flex: 1; display: flex; overflow: hidden; }
+    #main-area { flex: 1; display: flex; overflow: hidden; min-height: 0; }
 
-    #video-wrapper { flex: 1; position: relative; background: #000; display: flex; align-items: center; justify-content: center; }
-    #teacher-video { max-width: 100%; max-height: 100%; display: none; }
-    #waiting-screen { display: flex; flex-direction: column; align-items: center; gap: 1rem; color: #9ca3af; }
-    #waiting-screen .icon { font-size: 4rem; }
+    #video-wrapper {
+      flex: 1; position: relative; background: #0f172a;
+      display: flex; align-items: center; justify-content: center;
+      border-right: 1px solid var(--border);
+      min-width: 0; min-height: 0; overflow: hidden;
+    }
+    /* Fill the area and letterbox: the whole teacher screen always fits, at any size */
+    #teacher-video { width: 100%; height: 100%; object-fit: contain; display: none; background: #000; }
+    #waiting-screen {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 1rem; color: #64748b;
+    }
+    .ws-icon {
+      width: 72px; height: 72px;
+      background: #1e293b; border: 2px dashed #334155;
+      border-radius: 16px; display: flex; align-items: center;
+      justify-content: center; font-size: 32px;
+    }
+    .ws-title { font-size: 15px; font-weight: 600; color: #94a3b8; }
+    .ws-sub   { font-size: 12px; color: #64748b; }
+    .ws-spinner {
+      width: 20px; height: 20px; border: 2px solid #334155;
+      border-top-color: #3b82f6; border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
     #whiteboard-overlay {
       position: absolute; top: 0; left: 0; width: 100%; height: 100%;
       pointer-events: none;
     }
 
-    #sidebar {
-      width: 260px; background: #111827; border-left: 1px solid #1f2937;
-      display: flex; flex-direction: column; padding: 0.5rem;
-    }
-
-    #chat-container { flex: 1; overflow-y: auto; padding: 0.5rem; display: flex; flex-direction: column; gap: 0.4rem; }
-    .chat-msg { padding: 0.4rem 0.6rem; border-radius: 6px; font-size: 0.85rem; }
-    .chat-msg.teacher { background: #1e3a5f; border-left: 3px solid #4f9eff; }
-    .chat-msg.student { background: #1f2937; }
-    .chat-msg .sender { font-weight: bold; font-size: 0.75rem; margin-bottom: 2px; }
-
-    #chat-input-area { display: flex; gap: 0.5rem; padding: 0.5rem 0; }
-    #chat-input { flex: 1; padding: 0.5rem; background: #1f2937; border: 1px solid #374151; border-radius: 6px; color: #fff; font-size: 0.85rem; }
-    #send-btn { padding: 0.5rem 0.75rem; background: #4f9eff; border: none; border-radius: 6px; color: #fff; cursor: pointer; }
-
-    #raise-hand-btn {
-      margin: 0.5rem; padding: 0.6rem; background: #f59e0b; border: none;
-      border-radius: 8px; color: #000; font-weight: bold; cursor: pointer; font-size: 0.9rem;
-    }
-    #raise-hand-btn.raised { background: #dc2626; color: #fff; }
-
+    /* ── BOTTOM BAR ──────────────────────────────────── */
     #bottom-bar {
-      height: 40px; background: #111827; display: flex; align-items: center;
-      padding: 0 1rem; gap: 1rem; border-top: 1px solid #1f2937; font-size: 0.8rem; color: #6b7280;
+      height: 38px; background: var(--bg-surface);
+      border-top: 1px solid var(--border);
+      display: flex; align-items: center; padding: 0 1.25rem;
+      font-size: 11px; color: var(--text-muted); gap: 1rem;
+      flex-shrink: 0;
     }
-    #fullscreen-btn { margin-left: auto; padding: 0.3rem 0.75rem; background: #374151; border: none; border-radius: 6px; color: #fff; cursor: pointer; }
+    #raise-hand-btn {
+      padding: 0.35rem 1rem;
+      background: #111111; border: 1px solid #111111;
+      border-radius: var(--radius-sm); color: #fff;
+      font-family: inherit; font-size: 12px; font-weight: 600;
+      cursor: pointer; transition: background .15s, color .15s;
+      display: flex; align-items: center; gap: 6px;
+    }
+    #raise-hand-btn:hover { background: #333333; }
+    #raise-hand-btn.raised { background: #fff; color: #111; border-color: #111; border-width: 2px; }
+    #fullscreen-btn {
+      margin-left: auto; padding: 0.3rem 0.85rem;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); color: var(--text-dim);
+      font-family: inherit; font-size: 11px; cursor: pointer;
+      transition: background .15s, color .15s;
+      display: flex; align-items: center; gap: 5px;
+    }
+    #fullscreen-btn:hover { background: #111; color: #fff; border-color: #111; }
+
+    /* ── Fullscreen layout overrides ─────────────────────── */
+    /* When the classroom view itself is the fullscreen element */
+    #classroom-view:fullscreen,
+    #classroom-view:-webkit-full-screen {
+      display: flex;
+      flex-direction: column;
+      background: #0f172a;
+    }
+    #classroom-view:fullscreen #top-bar,
+    #classroom-view:-webkit-full-screen #top-bar { flex-shrink: 0; }
+    #classroom-view:fullscreen #main-area,
+    #classroom-view:-webkit-full-screen #main-area { flex: 1; overflow: hidden; }
+    #classroom-view:fullscreen #bottom-bar,
+    #classroom-view:-webkit-full-screen #bottom-bar {
+      flex-shrink: 0;
+      background: rgba(0,0,0,.6);
+      border-top: 1px solid rgba(255,255,255,.08);
+      color: rgba(255,255,255,.6);
+    }
+    #classroom-view:fullscreen #fullscreen-btn,
+    #classroom-view:-webkit-full-screen #fullscreen-btn {
+      background: rgba(255,255,255,.1);
+      border-color: rgba(255,255,255,.2);
+      color: rgba(255,255,255,.8);
+    }
+    #classroom-view:fullscreen #fullscreen-btn:hover,
+    #classroom-view:-webkit-full-screen #fullscreen-btn:hover {
+      background: rgba(255,255,255,.25);
+      color: #fff;
+    }
+    #classroom-view:fullscreen #video-wrapper,
+    #classroom-view:-webkit-full-screen #video-wrapper {
+      background: #000;
+    }
+    #classroom-view:fullscreen #teacher-video,
+    #classroom-view:-webkit-full-screen #teacher-video {
+      width: 100%; height: 100%; object-fit: contain;
+    }
+
+    /* ── Phones / narrow screens ─────────────────────────── */
+    @media (max-width: 700px) {
+      #top-bar { padding: 0 0.6rem; gap: 0.5rem; height: 46px; }
+      .topbar-brand > div:last-child, .tb-divider,
+      #student-count-label, .tb-student-name { display: none; }
+      .status-pill { padding: 4px 9px; font-size: 11px; }
+      .tb-room-label { padding: 3px 7px; }
+      .leave-btn { padding: 5px 10px; }
+      #bottom-bar { height: auto; min-height: 46px; padding: 6px 0.6rem; gap: 0.5rem; }
+      #bottom-bar > span { display: none; }
+      #raise-hand-btn, #fullscreen-btn { padding: 0.55rem 0.9rem; font-size: 13px; }
+      #video-wrapper { border-right: none; }
+    }
+    /* Phone turned sideways: give the video the most room */
+    @media (max-height: 500px) and (orientation: landscape) {
+      #top-bar { height: 38px; }
+      #bottom-bar { min-height: 38px; height: auto; padding: 3px 0.6rem; }
+      #bottom-bar > span { display: none; }
+    }
+
+    /* ── Session Recovery Banner ─────────────────────────── */
+    #recovery-banner {
+      display: none;
+      position: fixed; top: 0; left: 0; right: 0; z-index: 5000;
+      background: #1a1a2e;
+      color: #fff;
+      padding: 10px 20px;
+      font-size: 13px;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 2px solid #4ade80;
+      animation: slideDown .4s ease;
+    }
+    @keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+    #recovery-banner .rb-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: #4ade80; flex-shrink: 0;
+      animation: pulse-dot 1.5s infinite;
+    }
+    #recovery-banner .rb-dismiss {
+      margin-left: auto; background: transparent;
+      border: 1px solid rgba(255,255,255,.4); border-radius: 6px;
+      color: #fff; font-size: 11px; padding: 3px 10px; cursor: pointer;
+    }
+    #recovery-banner .rb-dismiss:hover { background: rgba(255,255,255,.1); }
+
+    /* ── Reconnecting overlay (teacher gone) ───────────────── */
+    #reconnect-overlay {
+      display: none;
+      position: fixed; inset: 0; z-index: 4000;
+      background: rgba(0,0,0,.7);
+      backdrop-filter: blur(6px);
+      flex-direction: column; align-items: center; justify-content: center;
+      gap: 1rem; color: #fff;
+    }
+    #reconnect-overlay .ro-icon { font-size: 3rem; }
+    #reconnect-overlay h2 { font-size: 1.1rem; font-weight: 700; }
+    #reconnect-overlay p  { font-size: 0.9rem; opacity: .8; text-align: center; max-width: 300px; }
+    #reconnect-overlay .ro-spinner {
+      width: 32px; height: 32px;
+      border: 4px solid rgba(255,255,255,.3);
+      border-top-color: #4ade80;
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
   </style>
 </head>
 <body>
 
+<!-- Session Recovery Banner -->
+<div id="recovery-banner">
+  <div class="rb-dot"></div>
+  <span id="recovery-msg">Session restored successfully.</span>
+  <button class="rb-dismiss" onclick="document.getElementById('recovery-banner').style.display='none'">✕ Dismiss</button>
+</div>
+
+<!-- Reconnecting Overlay (shown when teacher disconnects) -->
+<div id="reconnect-overlay">
+  <div class="ro-icon">⚡</div>
+  <h2>Teacher Disconnected</h2>
+  <p id="reconnect-msg">Waiting for teacher to reconnect...</p>
+  <div class="ro-spinner"></div>
+</div>
+
 <!-- STEP 1: CONNECT -->
 <div id="connect-screen">
-  <h1>📡 Classroom Viewer</h1>
-  <p style="color:#9ca3af">Enter your name to browse live classrooms</p>
-  <input id="student-name" placeholder="Your Name" />
-  <button id="connect-btn">Browse Classrooms →</button>
-  <p id="connect-error" style="color:#ef4444;display:none"></p>
+  <div class="connect-logo">🏫</div>
+  <div class="connect-brand">KGI Classroom</div>
+  <div class="connect-sub">Khali's Group of Industries</div>
+  <div class="connect-card">
+    <div>
+      <h2>Student Portal</h2>
+      <p>Enter your name to browse live classrooms</p>
+    </div>
+    <div class="field-group">
+      <label class="field-label" for="student-name">Your Name</label>
+      <input class="field-input" id="student-name" placeholder="e.g. Ali Hassan" autocomplete="off" />
+    </div>
+    <button id="connect-btn">Browse Classrooms →</button>
+    <p id="connect-error"></p>
+  </div>
 </div>
 
 <!-- STEP 2: BROWSE ROOMS -->
 <div id="browse-screen">
-  <div style="width:100%;max-width:900px;display:flex;justify-content:space-between;align-items:center">
+  <div class="browse-topbar">
+    <div class="browse-brand">
+      <div class="browse-brand-logo">🏫</div>
+      <div>
+        <div class="browse-brand-text">KGI Classroom</div>
+        <div class="browse-brand-sub">Khali's Group of Industries</div>
+      </div>
+    </div>
+    <div class="browse-divider"></div>
+    <span class="browse-title">Active Classrooms</span>
+    <div class="browse-student-tag">
+      <div class="av" id="browse-avatar">?</div>
+      <span id="browse-student-name">Student</span>
+    </div>
     <button id="back-btn">← Back</button>
-    <h2>🏫 Active Classrooms</h2>
-    <button id="refresh-btn">🔄 Refresh</button>
+    <button id="refresh-btn">↺ Refresh</button>
   </div>
-  <div id="rooms-grid"></div>
-  <p id="browse-error" style="color:#ef4444;display:none"></p>
+  <div class="browse-body">
+    <div class="browse-section-hdr">
+      <h3>Live Sessions</h3>
+      <span id="rooms-count">0 rooms</span>
+    </div>
+    <div id="rooms-grid"></div>
+    <p id="browse-error"></p>
+  </div>
 </div>
 
 <!-- PASSWORD MODAL -->
 <div id="pw-modal">
   <div id="pw-box">
-    <h3>🔒 This room is password protected</h3>
-    <input id="pw-input" type="password" placeholder="Enter room password" />
-    <button id="pw-ok">Join Room</button>
-    <button id="pw-cancel">Cancel</button>
+    <div class="pw-hdr">
+      <span class="pw-icon">🔒</span>
+      <div>
+        <h3>Password Required</h3>
+        <p>This classroom is protected</p>
+      </div>
+    </div>
+    <input id="pw-input" type="password" placeholder="Enter room password" autocomplete="off" />
+    <p id="pw-error"></p>
+    <div class="pw-actions">
+      <button id="pw-ok">Join Room</button>
+      <button id="pw-cancel">Cancel</button>
+    </div>
   </div>
 </div>
 
 <!-- CLASSROOM VIEW -->
 <div id="classroom-view">
   <div id="top-bar">
-    <div id="status-dot"></div>
-    <span id="status-text">Waiting for broadcast...</span>
-    <span style="margin-left:auto;color:#9ca3af;font-size:0.8rem" id="room-label"></span>
+    <div class="topbar-brand">
+      <div class="topbar-brand-logo">🏫</div>
+      <div>
+        <div class="topbar-brand-name">KGI Classroom</div>
+        <div class="topbar-brand-sub">Khali's Group of Industries</div>
+      </div>
+    </div>
+    <div class="tb-divider"></div>
+    <div class="status-pill">
+      <div id="status-dot"></div>
+      <span id="status-text">Connecting...</span>
+    </div>
+    <div class="tb-room-label">Room: <strong id="room-label">—</strong></div>
+    <div class="tb-right">
+      <button id="leave-btn" class="leave-btn" onclick="leaveSession()">🚪 Leave Room</button>
+      <div class="tb-student-name" id="tb-student-name">Student</div>
+      <span id="student-count-label" style="font-size:11px;color:var(--text-muted)"></span>
+    </div>
   </div>
 
   <div id="main-area">
     <div id="video-wrapper">
       <div id="waiting-screen">
-        <div class="icon">🖥️</div>
-        <div>Waiting for teacher to start...</div>
+        <div class="ws-icon">🖥️</div>
+        <div class="ws-title">Waiting for Broadcast</div>
+        <div class="ws-sub">The teacher hasn't started yet</div>
+        <div class="ws-spinner"></div>
       </div>
       <video id="teacher-video" autoplay playsinline></video>
-      <canvas id="whiteboard-overlay"></canvas>
-    </div>
-    <div id="sidebar">
-      <div id="chat-container"></div>
-      <div id="chat-input-area">
-        <input id="chat-input" placeholder="Type a message..." maxlength="300" />
-        <button id="send-btn">➤</button>
-      </div>
-      <button id="raise-hand-btn">✋ Raise Hand</button>
     </div>
   </div>
 
   <div id="bottom-bar">
-    <span id="student-count-label">Students: —</span>
+    <span>🔒 Secure LAN Session</span>
+    <button id="raise-hand-btn">✋ Raise Hand</button>
     <button id="fullscreen-btn">⛶ Fullscreen</button>
   </div>
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
-// ─── App State ────────────────────────────────────────────────────
+// ─── Session Persistence (localStorage) ─────────────────────────────────────
+const SESSION_KEY = 'kgi_student_session';
+
+function saveStudentSession() {
+  if (!studentName || !roomCode) return;
+  localStorage.setItem(SESSION_KEY, JSON.stringify({
+    studentName,
+    roomCode,
+    serverUrl,
+    savedAt: Date.now()
+  }));
+}
+
+function loadStudentSession() {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) return null;
+    const s = JSON.parse(raw);
+    if (Date.now() - s.savedAt > 24 * 60 * 60 * 1000) {
+      localStorage.removeItem(SESSION_KEY);
+      return null;
+    }
+    return s;
+  } catch { return null; }
+}
+
+function clearStudentSession() {
+  localStorage.removeItem(SESSION_KEY);
+}
+
+function showRecoveryBanner(msg) {
+  const banner = document.getElementById('recovery-banner');
+  document.getElementById('recovery-msg').textContent = msg;
+  banner.style.display = 'flex';
+  setTimeout(() => { banner.style.display = 'none'; }, 6000);
+}
+
+function showReconnectOverlay(msg) {
+  const overlay = document.getElementById('reconnect-overlay');
+  document.getElementById('reconnect-msg').textContent = msg || 'Teacher disconnected. Waiting for reconnect...';
+  overlay.style.display = 'flex';
+}
+
+function hideReconnectOverlay() {
+  document.getElementById('reconnect-overlay').style.display = 'none';
+}
+
+// ─── App State ────────────────────────────────────────────────────────────────
 let socket = null;
 let peerConnection = null;
 let handRaised = false;
@@ -203,11 +639,18 @@ let teacherSocketId = null;
 let roomCode = null;
 let studentName = '';
 let serverUrl = '';
-let pendingJoinRoom = null;   // room card clicked, waiting for password
-const RTC_CONFIG = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+let pendingJoinRoom = null;
+let pendingOffer = null;
+// ICE config comes from our own server (built-in LAN TURN relay), so WebRTC
+// works with no internet. Google STUN is useless offline and was removed.
+let RTC_CONFIG = { iceServers: [] };
+const iceConfigReady = fetch('/api/ice-config')
+  .then(r => r.json())
+  .then(cfg => { RTC_CONFIG = cfg; console.log('[WebRTC] ICE config', cfg); })
+  .catch(e => console.warn('[WebRTC] Could not load ICE config, using direct LAN only:', e));
 let pendingCandidates = [];
 
-// ─── DOM ──────────────────────────────────────────────────────────
+// ─── DOM ───────────────────────────────────────────────────────────────────────
 const connectScreen  = document.getElementById('connect-screen');
 const browseScreen   = document.getElementById('browse-screen');
 const classroomView  = document.getElementById('classroom-view');
@@ -215,16 +658,73 @@ const teacherVideo   = document.getElementById('teacher-video');
 const waitingScreen  = document.getElementById('waiting-screen');
 const statusDot      = document.getElementById('status-dot');
 const statusText     = document.getElementById('status-text');
-const chatContainer  = document.getElementById('chat-container');
-const chatInput      = document.getElementById('chat-input');
-const sendBtn        = document.getElementById('send-btn');
 const raiseHandBtn   = document.getElementById('raise-hand-btn');
 const fullscreenBtn  = document.getElementById('fullscreen-btn');
 
-// ─── Server IP (hardcoded) ───────────────────────────────────────
-const SERVER_IP = '172.17.100.152';
+// ─── Server IP (auto-detected from URL) ────────────────────────────────────
+const SERVER_IP   = window.location.hostname;
+const SERVER_PORT = window.location.port || '3000';
 
-// ─── STEP 1: Connect to server & browse rooms ─────────────────────
+// ─── On page load: check for saved session ─────────────────────────────────
+window.addEventListener('load', () => {
+  const saved = loadStudentSession();
+  if (saved) {
+    document.getElementById('student-name').value = saved.studentName;
+    autoReconnect(saved);
+  }
+});
+
+function autoReconnect(saved) {
+  studentName = saved.studentName;
+  serverUrl   = saved.serverUrl || `http://${SERVER_IP}:${SERVER_PORT}`;
+
+  const btn = document.getElementById('connect-btn');
+  btn.textContent = 'Reconnecting...';
+  btn.disabled = true;
+  document.getElementById('connect-error').style.display = 'none';
+
+  if (socket) { socket.disconnect(); }
+  socket = io(serverUrl, { transports: ['polling', 'websocket'] });
+
+  socket.on('connect', () => {
+    btn.textContent = 'Browse Classrooms →';
+    btn.disabled = false;
+    connectScreen.style.display = 'none';
+    browseScreen.style.display  = 'flex';
+    document.getElementById('browse-student-name').textContent = studentName;
+    document.getElementById('browse-avatar').textContent = studentName[0].toUpperCase();
+    setupSocketListeners();
+    socket.on('rooms:updated', ({ rooms }) => renderRooms(rooms));
+    autoJoinRoom(saved.roomCode);
+  });
+
+  socket.on('connect_error', () => {
+    btn.textContent = 'Browse Classrooms →';
+    btn.disabled = false;
+    const err = document.getElementById('connect-error');
+    err.textContent = `Cannot connect to server — check your network`;
+    err.style.display = 'block';
+  });
+}
+
+function autoJoinRoom(code) {
+  socket.emit('get-rooms', ({ rooms }) => {
+    const found = rooms.find(r => r.code === code);
+    if (found) {
+      if (found.hasPassword) {
+        renderRooms(rooms);
+        showRecoveryBanner(`⚠️ Room ${code} has a password — please join manually.`);
+      } else {
+        joinRoom(code, '');
+      }
+    } else {
+      renderRooms(rooms);
+      showRecoveryBanner(`⏳ Room ${code} not found yet — waiting for teacher to reconnect...`);
+    }
+  });
+}
+
+// ─── STEP 1: Manual Connect ───────────────────────────────────────────────
 document.getElementById('connect-btn').addEventListener('click', () => {
   const name = document.getElementById('student-name').value.trim();
   const err  = document.getElementById('connect-error');
@@ -232,20 +732,22 @@ document.getElementById('connect-btn').addEventListener('click', () => {
   if (!name) { err.textContent = 'Please enter your name'; err.style.display = 'block'; return; }
 
   studentName = name;
-  serverUrl   = `https://${SERVER_IP}:3000`;
+  serverUrl   = `http://${SERVER_IP}:${SERVER_PORT}`;
 
   const btn = document.getElementById('connect-btn');
   btn.textContent = 'Connecting...';
   btn.disabled = true;
 
   if (socket) { socket.disconnect(); }
-  socket = io(serverUrl, { transports: ['websocket'], upgrade: false });
+  socket = io(serverUrl, { transports: ['polling', 'websocket'] });
 
   socket.on('connect', () => {
     btn.textContent = 'Browse Classrooms →';
     btn.disabled = false;
     connectScreen.style.display = 'none';
     browseScreen.style.display  = 'flex';
+    document.getElementById('browse-student-name').textContent = name;
+    document.getElementById('browse-avatar').textContent = name[0].toUpperCase();
     loadRooms();
     socket.on('rooms:updated', ({ rooms }) => renderRooms(rooms));
     // Register WebRTC listeners NOW so offers are never missed
@@ -267,25 +769,32 @@ function loadRooms() {
 
 function renderRooms(rooms) {
   const grid = document.getElementById('rooms-grid');
+  const countEl = document.getElementById('rooms-count');
   grid.innerHTML = '';
   if (!rooms || rooms.length === 0) {
+    countEl.textContent = '0 rooms';
     grid.innerHTML = `<div id="no-rooms">
-      <div style="font-size:3rem;margin-bottom:1rem">🏫</div>
-      <div>No active classrooms right now</div>
-      <div style="font-size:0.85rem;margin-top:0.5rem;color:#4b5563">Ask your teacher to create a classroom</div>
+      <div class="nr-icon"></div>
+      <h3>No active classrooms</h3>
+      <p>Ask your teacher to create a classroom<br>and try refreshing.</p>
     </div>`;
     return;
   }
+  countEl.textContent = `${rooms.length} room${rooms.length !== 1 ? 's' : ''}`;
   rooms.forEach(room => {
+    const initial = (room.teacherName || 'T')[0].toUpperCase();
     const card = document.createElement('div');
     card.className = 'room-card';
     card.innerHTML = `
-      <div class="rc-teacher">👨‍🏫 ${escHtml(room.teacherName)}</div>
-      <div class="rc-code">🏷️ ${escHtml(room.code)}</div>
-      <div class="rc-meta">
-        <span>👥 ${room.studentCount} student${room.studentCount !== 1 ? 's' : ''}</span>
-        ${room.broadcastActive ? '<span class="rc-live">LIVE</span>' : '<span style="color:#6b7280">⏸ Not broadcasting</span>'}
-        ${room.hasPassword ? '<span class="rc-locked">🔒 Password required</span>' : ''}
+      <div class="rc-header">
+        <div class="rc-avatar">${initial}</div>
+        ${room.broadcastActive ? '<span class="rc-live">LIVE</span>' : '<span style="font-size:10px;color:var(--text-muted);background:var(--bg-card);border:1px solid var(--border);border-radius:20px;padding:3px 9px">⏸ Idle</span>'}
+      </div>
+      <div class="rc-teacher">${escHtml(room.teacherName)}</div>
+      <div class="rc-code">${escHtml(room.code)}</div>
+      <div class="rc-footer">
+        <span class="rc-badge">👥 ${room.studentCount} student${room.studentCount !== 1 ? 's' : ''}</span>
+        ${room.hasPassword ? '<span class="rc-locked">🔒 Protected</span>' : '<span style="font-size:11px;color:var(--success-lit)">✓ Open</span>'}
       </div>`;
     card.addEventListener('click', () => onRoomClick(room));
     grid.appendChild(card);
@@ -308,8 +817,10 @@ document.getElementById('back-btn').addEventListener('click', () => {
   browseScreen.style.display = 'none';
   connectScreen.style.display = 'flex';
   if (socket) { socket.disconnect(); socket = null; }
+  clearStudentSession(); // ← user chose to leave, clear saved session
   document.getElementById('connect-btn').textContent = 'Browse Classrooms →';
   document.getElementById('connect-btn').disabled = false;
+  document.getElementById('student-name').value = '';
 });
 
 // ─── Password modal ───────────────────────────────────────────────
@@ -339,12 +850,15 @@ function joinRoom(code, password) {
     }
     teacherSocketId = res.teacherSocketId;
     roomCode = code;
-    document.getElementById('room-label').textContent = `Room: ${code}`;
+    document.getElementById('room-label').textContent = code;
+    document.getElementById('tb-student-name').textContent = studentName;
     browseScreen.style.display = 'none';
     classroomView.style.display = 'flex';
+    saveStudentSession(); // ← persist session to browser storage
     // Flush any buffered offer that arrived before teacherSocketId was set
     if (pendingOffer) {
-      const po = pendingOffer; pendingOffer = null;
+      const po = pendingOffer;
+      pendingOffer = null;
       handleOffer(po.fromSocketId, po.offer);
     }
   });
@@ -353,46 +867,98 @@ function joinRoom(code, password) {
 // ─── Handle WebRTC offer from teacher ────────────────────────────
 async function handleOffer(fromSocketId, offer) {
   console.log('[WebRTC] Handling offer from teacher');
-  if (peerConnection) { peerConnection.close(); }
+  if (peerConnection) { peerConnection.onconnectionstatechange = null; peerConnection.close(); }
+  peerConnection = null; // new candidates get buffered until the new pc is ready
+  pendingCandidates = [];
+  await iceConfigReady;
+  // Keep candidates that arrived while we were waiting
+  const earlyCandidates = pendingCandidates;
   pendingCandidates = [];
 
-  peerConnection = new RTCPeerConnection(RTC_CONFIG);
-  peerConnection.onconnectionstatechange = () =>
-    console.log('[WebRTC] State:', peerConnection.connectionState);
+  const pc = new RTCPeerConnection(RTC_CONFIG);
+  peerConnection = pc;
+  setStatus('waiting', 'Connecting to teacher...');
 
-  peerConnection.ontrack = (event) => {
+  // Only show the video once media is actually flowing — otherwise a
+  // failed connection looks like a black screen.
+  pc.onconnectionstatechange = () => {
+    if (peerConnection !== pc) return;
+    console.log('[WebRTC] State:', pc.connectionState);
+    if (pc.connectionState === 'connected') {
+      showTeacherVideo();
+    } else if (pc.connectionState === 'failed') {
+      teacherVideo.style.display = 'none';
+      waitingScreen.style.display = 'flex';
+      setStatus('offline', 'Connection failed — retrying...');
+    } else if (pc.connectionState === 'disconnected') {
+      setStatus('waiting', 'Connection unstable — reconnecting...');
+    }
+  };
+
+  pc.ontrack = (event) => {
     console.log('[WebRTC] Track received:', event.track.kind);
     // Only update srcObject on video track (or first track) to avoid
     // an audio-only stream overwriting the video stream
     if (event.track.kind === 'video' || !teacherVideo.srcObject) {
       teacherVideo.srcObject = event.streams[0];
-      teacherVideo.style.display = 'block';
-      waitingScreen.style.display = 'none';
-      teacherVideo.play().catch(e => console.error('[Video]', e));
-      setStatus('live', 'Live');
     }
+    if (pc.connectionState === 'connected') showTeacherVideo();
   };
 
-  peerConnection.onicecandidate = (e) => {
+  pc.onicecandidate = (e) => {
     if (e.candidate) socket.emit('webrtc:ice-candidate', {
       targetSocketId: teacherSocketId, candidate: e.candidate.toJSON()
     });
   };
 
-  await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
-  for (const c of pendingCandidates) {
-    await peerConnection.addIceCandidate(new RTCIceCandidate(c)).catch(console.error);
+  await pc.setRemoteDescription(new RTCSessionDescription(offer));
+  for (const c of [...earlyCandidates, ...pendingCandidates]) {
+    await pc.addIceCandidate(new RTCIceCandidate(c)).catch(console.error);
   }
   pendingCandidates = [];
 
-  const answer = await peerConnection.createAnswer();
-  await peerConnection.setLocalDescription(answer);
-  socket.emit('webrtc:answer', { targetSocketId: teacherSocketId, answer: peerConnection.localDescription });
+  const answer = await pc.createAnswer();
+  await pc.setLocalDescription(answer);
+  socket.emit('webrtc:answer', { targetSocketId: teacherSocketId, answer: pc.localDescription });
+}
+
+// Teacher's sound plays by default (mic, or audio from a video the teacher plays).
+// The student already clicked "Join", so browsers normally allow sound.
+// Only if the browser still blocks it (e.g. page auto-rejoined after a refresh),
+// the picture starts silently and sound turns on at the student's next click/tap
+// anywhere on the page — no button needed.
+function showTeacherVideo() {
+  if (!teacherVideo.srcObject) return;
+  teacherVideo.style.display = 'block';
+  waitingScreen.style.display = 'none';
+  teacherVideo.muted = false;
+  teacherVideo.play().catch(e => {
+    console.warn('[Video] Sound blocked by browser until the first click/tap:', e.message);
+    teacherVideo.muted = true;
+    teacherVideo.play().catch(err => console.error('[Video]', err));
+    armSoundOnFirstInteraction();
+  });
+  setStatus('live', 'Live');
+}
+let soundArmed = false;
+function armSoundOnFirstInteraction() {
+  if (soundArmed) return;
+  soundArmed = true;
+  const enable = () => {
+    soundArmed = false;
+    ['pointerdown', 'keydown', 'touchstart'].forEach(ev => document.removeEventListener(ev, enable, true));
+    teacherVideo.muted = false;
+    teacherVideo.play().catch(console.error);
+  };
+  ['pointerdown', 'keydown', 'touchstart'].forEach(ev => document.addEventListener(ev, enable, true));
 }
 
 // ─── Socket & WebRTC Listeners (registered once at connect time) ──
 function setupSocketListeners() {
-  socket.on('broadcast:started', () => setStatus('waiting', 'Broadcast started — connecting...'));
+  socket.on('broadcast:started', () => {
+    setStatus('waiting', 'Broadcast started — connecting...');
+    hideReconnectOverlay(); // Teacher is back — dismiss the overlay
+  });
 
   socket.on('webrtc:offer', ({ fromSocketId, offer }) => {
     if (!teacherSocketId) {
@@ -419,50 +985,141 @@ function setupSocketListeners() {
     waitingScreen.style.display = 'flex';
   });
 
-  socket.on('broadcast:teacher-left', ({ message }) => {
-    setStatus('offline', message || 'Teacher disconnected');
+  socket.on('broadcast:teacher-left', ({ message, reconnecting }) => {
+    if (peerConnection) { peerConnection.close(); peerConnection = null; }
     teacherVideo.style.display = 'none';
     waitingScreen.style.display = 'flex';
-    if (peerConnection) { peerConnection.close(); peerConnection = null; }
+    if (reconnecting) {
+      // Teacher disconnected temporarily (e.g. power cut) — show overlay, keep session
+      setStatus('reconnecting', 'Waiting for teacher...');
+      showReconnectOverlay(message || 'Teacher disconnected. Session will resume automatically.');
+    } else {
+      // Deliberate end
+      setStatus('offline', message || 'Teacher ended the session');
+      clearStudentSession();
+    }
   });
-
-  socket.on('chat:message', ({ senderName, senderRole, message }) =>
-    appendChat(senderName, senderRole, message));
 
   socket.on('pointer:move', ({ x, y, mode }) => updatePointer(x, y, mode));
   socket.on('pointer:hide', hidePointer);
 }
 
-// ─── Chat ─────────────────────────────────────────────────────────
-sendBtn.addEventListener('click', sendChat);
-chatInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendChat(); });
-function sendChat() {
-  const msg = chatInput.value.trim();
-  if (!msg || !socket) return;
-  socket.emit('chat:message', { message: msg });
-  chatInput.value = '';
-}
-function appendChat(name, role, message) {
-  const div = document.createElement('div');
-  div.className = `chat-msg ${role}`;
-  div.innerHTML = `<div class="sender">${role === 'teacher' ? '👨‍🏫 ' : ''}${escHtml(name)}</div>${escHtml(message)}`;
-  chatContainer.appendChild(div);
-  chatContainer.scrollTop = chatContainer.scrollHeight;
-}
+
 
 // ─── Raise Hand ──────────────────────────────────────────────────
 raiseHandBtn.addEventListener('click', () => {
   if (!socket) return;
   handRaised = !handRaised;
-  raiseHandBtn.textContent = handRaised ? '✋ Lower Hand' : '✋ Raise Hand';
+  raiseHandBtn.innerHTML = handRaised ? '✋ Lower Hand' : '✋ Raise Hand';
   raiseHandBtn.classList.toggle('raised', handRaised);
   socket.emit(handRaised ? 'student:raise-hand' : 'student:lower-hand');
 });
 
-// ─── Fullscreen ───────────────────────────────────────────────────
-fullscreenBtn.addEventListener('click', () => {
-  if (!document.fullscreenElement) document.getElementById('video-wrapper').requestFullscreen();
-  else document.exitFullscreen();
+// ─── Leave Session & Join New Class ──────────────────────────────────────────
+function leaveSession() {
+  if (classroomView.style.display === 'none') return;
+  const status = document.getElementById('status-text').textContent;
+  const isOffline = status.includes('ended') || status.includes('Offline') || status.includes('offline');
+  if (isOffline || confirm("Are you sure you want to leave this classroom?")) {
+    clearStudentSession();
+    if (peerConnection) {
+      peerConnection.close();
+      peerConnection = null;
+    }
+    teacherVideo.style.display = 'none';
+    waitingScreen.style.display = 'flex';
+    if (socket) {
+      socket.disconnect();
+    }
+    classroomView.style.display = 'none';
+    browseScreen.style.display = 'flex';
+    socket = io(serverUrl, { transports: ['polling', 'websocket'] });
+    socket.on('connect', () => {
+      document.getElementById('browse-student-name').textContent = studentName;
+      document.getElementById('browse-avatar').textContent = studentName[0].toUpperCase();
+      loadRooms();
+      socket.on('rooms:updated', ({ rooms }) => renderRooms(rooms));
+      setupSocketListeners();
+    });
+  }
+}
+
+// ─── Fullscreen ────────────────────────────────────────────────────────────────
+function requestFullscreen(el) {
+  if (el.requestFullscreen)             return el.requestFullscreen();
+  if (el.webkitRequestFullscreen)       return el.webkitRequestFullscreen();
+  if (el.mozRequestFullScreen)          return el.mozRequestFullScreen();
+  if (el.msRequestFullscreen)           return el.msRequestFullscreen();
+}
+
+function exitFullscreen() {
+  if (document.exitFullscreen)          return document.exitFullscreen();
+  if (document.webkitExitFullscreen)    return document.webkitExitFullscreen();
+  if (document.mozCancelFullScreen)     return document.mozCancelFullScreen();
+  if (document.msExitFullscreen)        return document.msExitFullscreen();
+}
+
+function isFullscreen() {
+  return !!(document.fullscreenElement ||
+            document.webkitFullscreenElement ||
+            document.mozFullScreenElement ||
+            document.msFullscreenElement);
+}
+
+function updateFullscreenBtn() {
+  if (isFullscreen()) {
+    fullscreenBtn.innerHTML = '✕ Exit Fullscreen';
+    fullscreenBtn.title = 'Exit fullscreen (F)';
+  } else {
+    fullscreenBtn.innerHTML = '⛶ Fullscreen';
+    fullscreenBtn.title = 'Enter fullscreen (F)';
+  }
+}
+
+// Enter fullscreen in the best way this device supports.
+function enterFullscreen() {
+  const view = document.getElementById('classroom-view');
+  const supported = !!(view.requestFullscreen || view.webkitRequestFullscreen ||
+                       view.mozRequestFullScreen || view.msRequestFullscreen);
+  if (supported) {
+    // Fullscreen the whole classroom view so top-bar, video, and bottom-bar all stay visible
+    Promise.resolve(requestFullscreen(view)).then(() => {
+      // Phones: turn sideways so the teacher's screen fills the display (Android Chrome)
+      if (screen.orientation && screen.orientation.lock) {
+        screen.orientation.lock('landscape').catch(() => {});
+      }
+    }).catch(err => console.warn('[Fullscreen]', err));
+  } else if (teacherVideo.webkitEnterFullscreen && teacherVideo.style.display === 'block') {
+    // iPhone/iPad Safari only allows fullscreen on the <video> itself
+    teacherVideo.webkitEnterFullscreen();
+  }
+}
+function toggleFullscreen() {
+  if (isFullscreen()) {
+    exitFullscreen();
+    if (screen.orientation && screen.orientation.unlock) { try { screen.orientation.unlock(); } catch (e) {} }
+  } else {
+    enterFullscreen();
+  }
+}
+
+fullscreenBtn.addEventListener('click', toggleFullscreen);
+// Double-tap / double-click on the video also toggles fullscreen
+teacherVideo.addEventListener('dblclick', toggleFullscreen);
+
+// Keep button label in sync with actual fullscreen state (Esc key, etc.)
+document.addEventListener('fullscreenchange',       updateFullscreenBtn);
+document.addEventListener('webkitfullscreenchange', updateFullscreenBtn);
+document.addEventListener('mozfullscreenchange',    updateFullscreenBtn);
+document.addEventListener('MSFullscreenChange',     updateFullscreenBtn);
+
+// F key shortcut — toggle fullscreen (only when in classroom view)
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'f' || e.key === 'F') {
+    if (classroomView.style.display === 'none') return;
+    if (e.target && /^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return;
+    toggleFullscreen();
+  }
 });
 
 // ─── Pointer Rendering ────────────────────────────────────────────
@@ -474,7 +1131,8 @@ function ensurePointer() {
       position: 'fixed', borderRadius: '50%', pointerEvents: 'none',
       zIndex: '9999', display: 'none', transition: 'left 0.016s, top 0.016s'
     });
-    document.body.appendChild(pointerEl);
+    // Inside the classroom view so the pointer stays visible in fullscreen too
+    (document.getElementById('classroom-view') || document.body).appendChild(pointerEl);
   }
 }
 function updatePointer(x, y, mode) {

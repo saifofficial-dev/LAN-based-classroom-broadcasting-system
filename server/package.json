@@ -1,10 +1,28 @@
 {
-  "name": "classroom-lan-server",
+  "name": "classroom-server",
   "version": "1.0.0",
+  "main": "src/index.js",
+  "bin": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
-    "setup-db": "node src/database/migrate.js"
+    "setup-db": "node src/database/migrate.js",
+    "build": "pkg ."
+  },
+  "pkg": {
+    "scripts": "src/**/*.js",
+    "assets": [
+      "src/**/*.sql",
+      "../teacher-app/public/**",
+      "../student-app/public/**",
+      "node_modules/sqlite3/build/Release/node_sqlite3.node",
+      "node_modules/bcrypt/lib/binding/napi-v3/bcrypt_lib.node",
+      "node_modules/socket.io/client-dist/**"
+    ],
+    "targets": [
+      "node18-win-x64"
+    ],
+    "outputPath": "dist"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",
@@ -13,6 +31,7 @@
     "jsonwebtoken": "^9.0.2",
     "multer": "^1.4.5-lts.1",
     "node-forge": "^1.4.0",
+    "node-turn": "^0.0.6",
     "selfsigned": "^5.5.0",
     "socket.io": "^4.7.4",
     "sqlite3": "^5.1.6",

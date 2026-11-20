@@ -6,9 +6,14 @@ const path = require('path');
 const fs = require('fs');
 const { verifyToken } = require('../middleware/auth');
 
+const isPackaged = typeof process.pkg !== 'undefined';
+const uploadsBase = isPackaged
+  ? path.join(path.dirname(process.execPath), 'uploads')
+  : path.join(__dirname, '../../../uploads');
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const dir = path.join(__dirname, '../../../uploads', req.params.sessionId || 'general');
+    const dir = path.join(uploadsBase, req.params.sessionId || 'general');
     fs.mkdirSync(dir, { recursive: true });
     cb(null, dir);
   },

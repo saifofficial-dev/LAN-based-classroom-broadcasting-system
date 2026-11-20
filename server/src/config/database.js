@@ -3,7 +3,12 @@ const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const fs = require('fs');
 
-const dbPath = process.env.DB_PATH || path.join(__dirname, '../../../database/classroom.db');
+const isPackaged = typeof process.pkg !== 'undefined';
+const dbPath = process.env.DB_PATH || (
+  isPackaged
+    ? path.join(path.dirname(process.execPath), 'classroom.db')
+    : path.join(__dirname, '../../../database/classroom.db')
+);
 const dbDir = path.dirname(dbPath);
 
 // Ensure database directory exists
